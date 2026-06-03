@@ -1,0 +1,356 @@
+import { useState } from "react";
+import { useSearchParams } from "react-router";
+import { motion } from "framer-motion";
+import {
+  Users,
+  UserCog,
+  BookOpen,
+  Plus,
+  Search,
+  CheckCircle,
+  XCircle,
+  Trash2,
+  Lock,
+} from "lucide-react";
+import DashboardLayout from "@/components/DashboardLayout";
+import { useAuth } from "@/hooks/useAuth";
+import { trpc } from "@/providers/trpc";
+
+type Tab = "dashboard" | "commandants" | "batches" | "users" | "settings";
+
+export default function SuperAdminDashboard() {
+  const [searchParams] = useSearchParams();
+  const tab = (searchParams.get("tab") || "dashboard") as Tab;
+
+  return (
+    <DashboardLayout requiredRole="super_admin" title={tab === "dashboard" ? "Super Admin Dashboard" : tab.charAt(0).toUpperCase() + tab.slice(1)}>
+      {tab === "dashboard" && <DashboardOverview />}
+      {tab === "commandants" && <CommandantsTab />}
+      {tab === "batches" && <BatchesTab />}
+      {tab === "users" && <AllUsersTab />}
+      {tab === "settings" && <SettingsTab />}
+    </DashboardLayout>
+  );
+}
+
+function DashboardOverview() {
+  const { data: stats } = trpc.stats.dashboard.useQuery();
+
+  const cards = [
+    { label: "Total Users", value: stats?.totalUsers || 0, icon: <Users className="w-6 h-6" />, color: "bg-blue-500" },
+    { label: "Commandants", value: stats?.totalCommandants || 0, icon: <UserCog className="w-6 h-6" />, color: "bg-purple-500" },
+    { label: "Total Batches", value: stats?.totalBatches || 0, icon: <BookOpen className="w-6 h-6" />, color: "bg-amber-500" },
+    { label: "Corps Members", value: stats?.totalCorpsMembers || 0, icon: <Users className="w-6 h-6" />, color: "bg-green-500" },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {cards.map((card, i) => (
+          <motion.div
+            key={card.label}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.1 }}
+            className="bg-white rounded-xl p-6 shadow-sm border"
+          >
+            <div className={`${card.color} w-12 h-12 rounded-lg flex items-center justify-center text-white mb-4`}>
+              {card.icon}
+            </div>
+            <p className="text-2xl font-bold text-gray-800">{card.value}</p>
+            <p className="text-sm text-gray-500">{card.label}</p>
+          </motion.div>
+        ))}
+      </div>
+
+      {stats?.activeBatch && (
+        <div className="bg-white rounded-xl p-6 shadow-sm border">
+          <h3 className="text-lg font-semibold text-gray-800 mb-2">Active Batch</h3>
+          <p className="text-gray-600">
+            <span className="font-medium">{stats.activeBatch.name}</span> ({stats.activeBatch.state})
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CommandantsTab() {
+  const utils = trpc.useUtils();
+  const { data: users, refetch } = trpc.users.list.useQuery({ role: "camp_commandant" });
+  const { data: stateCmdts } = trpc.users.list.useQuery({ role: "state_commandant" });
+  const createUser = trpc.users.create.useMutation({ onSuccess: () => { refetch(); utils.users.list.invalidate(); } });
+
+  const [form, setForm] = useState({ fullName: "", username: "", password: "", role: "camp_commandant" as const, state: "ondo" as "ondo" | "lagos" });
+  const [showForm, setShowForm] = useState(false);
+
+  const handleCreate = (e: React.FormEvent) => {
+    e.preventDefault();
+    createUser.mutate(form, {
+      onSuccess: () => {
+        setShowForm(false);
+        setForm({ fullName: "", username: "", password: "", role: "camp_commandant", state: "ondo" });
+      },
+    });
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-lg font-semibold text-gray-800">Commandants</h2>
+        <button onClick={() => setShowForm(!showForm)} className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+          <Plus className="w-4 h-4" />
+          Create User
+        </button>
+      </div>
+
+      {showForm && (
+        <motion.form
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: "auto" }}
+          className="bg-white rounded-xl p-6 shadow-sm border space-y-4"
+          onSubmit={handleCreate}
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <input type="text" placeholder="Full Name" value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-green-500" required />
+            <input type="text" placeholder="Username" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-green-500" required />
+            <input type="password" placeholder="Password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-green-500" required />
+            <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as "camp_commandant" })} className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-green-500">
+              <option value="camp_commandant">Camp Commandant</option>
+              <option value="state_commandant">State Commandant</option>
+            </select>
+            <select value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value as "ondo" | "lagos" })} className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-green-500">
+              <option value="ondo">Ondo</option>
+              <option value="lagos">Lagos</option>
+            </select>
+          </div>
+          <div className="flex gap-3">
+            <button type="submit" disabled={createUser.isPending} className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50">
+              {createUser.isPending ? "Creating..." : "Create"}
+            </button>
+            <button type="button" onClick={() => setShowForm(false)} className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
+          </div>
+        </motion.form>
+      )}
+
+      {/* Camp Commandants */}
+      <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+        <div className="px-6 py-4 border-b"><h3 className="font-semibold text-gray-800">Camp Commandants</h3></div>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50">
+              <tr><th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th><th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Username</th><th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">State</th><th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th></tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {users?.map((u) => (
+                <tr key={u.id} className="hover:bg-gray-50">
+                  <td className="px-4 py-3 text-sm font-medium text-gray-800">{u.fullName}</td>
+                  <td className="px-4 py-3 text-sm text-gray-600">{u.username}</td>
+                  <td className="px-4 py-3 text-sm text-gray-600 capitalize">{u.state}</td>
+                  <td className="px-4 py-3">{u.isActive ? <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">Active</span> : <span className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full">Inactive</span>}</td>
+                </tr>
+              )) || <tr><td colSpan={4} className="px-4 py-8 text-center text-gray-400">No commandants found</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* State Commandants */}
+      <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+        <div className="px-6 py-4 border-b"><h3 className="font-semibold text-gray-800">State Commandants</h3></div>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50">
+              <tr><th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th><th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Username</th><th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">State</th><th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th></tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {stateCmdts?.map((u) => (
+                <tr key={u.id} className="hover:bg-gray-50">
+                  <td className="px-4 py-3 text-sm font-medium text-gray-800">{u.fullName}</td>
+                  <td className="px-4 py-3 text-sm text-gray-600">{u.username}</td>
+                  <td className="px-4 py-3 text-sm text-gray-600 capitalize">{u.state}</td>
+                  <td className="px-4 py-3">{u.isActive ? <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">Active</span> : <span className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full">Inactive</span>}</td>
+                </tr>
+              )) || <tr><td colSpan={4} className="px-4 py-8 text-center text-gray-400">No state commandants found</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BatchesTab() {
+  const utils = trpc.useUtils();
+  const { data: batches, refetch } = trpc.batches.list.useQuery();
+  const createBatch = trpc.batches.create.useMutation({ onSuccess: () => refetch() });
+  const activate = trpc.batches.activate.useMutation({ onSuccess: () => { refetch(); utils.stats.dashboard.invalidate(); } });
+  const deactivate = trpc.batches.deactivate.useMutation({ onSuccess: () => { refetch(); utils.stats.dashboard.invalidate(); } });
+  const deleteBatch = trpc.batches.delete.useMutation({ onSuccess: () => refetch() });
+
+  const [form, setForm] = useState({ name: "", year: 2025, state: "ondo" as "ondo" | "lagos", description: "" });
+  const [showForm, setShowForm] = useState(false);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-lg font-semibold text-gray-800">Batches</h2>
+        <button onClick={() => setShowForm(!showForm)} className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+          <Plus className="w-4 h-4" />
+          Create Batch
+        </button>
+      </div>
+
+      {showForm && (
+        <motion.form initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="bg-white rounded-xl p-6 shadow-sm border space-y-4" onSubmit={(e) => { e.preventDefault(); createBatch.mutate(form, { onSuccess: () => { setShowForm(false); setForm({ name: "", year: 2025, state: "ondo", description: "" }); } }); }}>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <input type="text" placeholder="Batch Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-green-500" required />
+            <input type="number" placeholder="Year" value={form.year} onChange={(e) => setForm({ ...form, year: parseInt(e.target.value) })} className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-green-500" required />
+            <select value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value as "ondo" | "lagos" })} className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-green-500">
+              <option value="ondo">Ondo</option>
+              <option value="lagos">Lagos</option>
+            </select>
+          </div>
+          <textarea placeholder="Description (optional)" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-green-500" />
+          <div className="flex gap-3">
+            <button type="submit" disabled={createBatch.isPending} className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50">{createBatch.isPending ? "Creating..." : "Create"}</button>
+            <button type="button" onClick={() => setShowForm(false)} className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
+          </div>
+        </motion.form>
+      )}
+
+      <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50"><tr><th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th><th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Year</th><th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">State</th><th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th><th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th></tr></thead>
+            <tbody className="divide-y divide-gray-100">
+              {batches?.map((b) => (
+                <tr key={b.id} className="hover:bg-gray-50">
+                  <td className="px-4 py-3 text-sm font-medium text-gray-800">{b.name}</td>
+                  <td className="px-4 py-3 text-sm text-gray-600">{b.year}</td>
+                  <td className="px-4 py-3 text-sm text-gray-600 capitalize">{b.state}</td>
+                  <td className="px-4 py-3">{b.isActive ? <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">Active</span> : <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">Inactive</span>}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex gap-2">
+                      {b.isActive ? (
+                        <button onClick={() => deactivate.mutate({ id: b.id })} className="text-amber-600 hover:text-amber-700 text-sm" title="Deactivate"><XCircle className="w-4 h-4" /></button>
+                      ) : (
+                        <button onClick={() => activate.mutate({ id: b.id })} className="text-green-600 hover:text-green-700 text-sm" title="Activate"><CheckCircle className="w-4 h-4" /></button>
+                      )}
+                      <button onClick={() => deleteBatch.mutate({ id: b.id })} className="text-red-600 hover:text-red-700 text-sm" title="Delete"><Trash2 className="w-4 h-4" /></button>
+                    </div>
+                  </td>
+                </tr>
+              )) || <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-400">No batches found</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AllUsersTab() {
+  const [search, setSearch] = useState("");
+  const { data: users, refetch } = trpc.users.list.useQuery({ search: search || undefined });
+  const toggleActive = trpc.users.update.useMutation({ onSuccess: () => refetch() });
+
+  return (
+    <div className="space-y-4">
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+        <input type="text" placeholder="Search by name or username..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-green-500" />
+      </div>
+      <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50"><tr><th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th><th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Username</th><th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th><th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th><th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th></tr></thead>
+            <tbody className="divide-y divide-gray-100">
+              {users?.map((u) => (
+                <tr key={u.id} className="hover:bg-gray-50">
+                  <td className="px-4 py-3 text-sm font-medium text-gray-800">{u.fullName}</td>
+                  <td className="px-4 py-3 text-sm text-gray-600">{u.username}</td>
+                  <td className="px-4 py-3 text-sm text-gray-600">{u.role.replace(/_/g, " ")}</td>
+                  <td className="px-4 py-3">{u.isActive ? <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">Active</span> : <span className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full">Inactive</span>}</td>
+                  <td className="px-4 py-3">
+                    <button onClick={() => toggleActive.mutate({ id: u.id, isActive: u.isActive ? 0 : 1 })} className="text-sm text-blue-600 hover:text-blue-700">
+                      {u.isActive ? "Deactivate" : "Activate"}
+                    </button>
+                  </td>
+                </tr>
+              )) || <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-400">No users found</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SettingsTab() {
+  const { user } = useAuth();
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
+  const [passwordError, setPasswordError] = useState("");
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
+
+  const changePassword = trpc.customAuth.changePassword.useMutation({
+    onSuccess: () => {
+      setPasswordSuccess(true);
+      setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      setTimeout(() => setPasswordSuccess(false), 3000);
+    },
+    onError: (err) => setPasswordError(err.message),
+  });
+
+  const handlePasswordChange = (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError("");
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setPasswordError("Passwords do not match");
+      return;
+    }
+    if (passwordForm.newPassword.length < 6) {
+      setPasswordError("Password must be at least 6 characters");
+      return;
+    }
+    changePassword.mutate({ currentPassword: passwordForm.currentPassword, newPassword: passwordForm.newPassword });
+  };
+
+  return (
+    <div className="max-w-lg space-y-6">
+      <div className="bg-white rounded-xl p-6 shadow-sm border space-y-4">
+        <h3 className="text-lg font-semibold text-gray-800">System Settings</h3>
+        <div className="space-y-3">
+          <div className="flex justify-between py-2 border-b"><span className="text-gray-500">System Name</span><span className="font-medium">NYSC Camp Evaluation System</span></div>
+          <div className="flex justify-between py-2 border-b"><span className="text-gray-500">Admin Name</span><span className="font-medium">{user?.fullName}</span></div>
+          <div className="flex justify-between py-2 border-b"><span className="text-gray-500">Admin Role</span><span className="font-medium">Super Admin</span></div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl p-6 shadow-sm border">
+        <h3 className="text-lg font-semibold text-gray-800 mb-4">Change Password</h3>
+        {!showPasswordForm ? (
+          <button onClick={() => setShowPasswordForm(true)} className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+            <Lock className="w-4 h-4" />
+            Change Password
+          </button>
+        ) : (
+          <form onSubmit={handlePasswordChange} className="space-y-4">
+            {passwordError && <p className="text-red-500 text-sm">{passwordError}</p>}
+            {passwordSuccess && <p className="text-green-600 text-sm">Password changed successfully!</p>}
+            <input type="password" placeholder="Current Password" value={passwordForm.currentPassword} onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-green-500" required />
+            <input type="password" placeholder="New Password" value={passwordForm.newPassword} onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-green-500" required />
+            <input type="password" placeholder="Confirm New Password" value={passwordForm.confirmPassword} onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-green-500" required />
+            <div className="flex gap-3">
+              <button type="submit" disabled={changePassword.isPending} className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50">
+                {changePassword.isPending ? "Changing..." : "Change"}
+              </button>
+              <button type="button" onClick={() => setShowPasswordForm(false)} className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
