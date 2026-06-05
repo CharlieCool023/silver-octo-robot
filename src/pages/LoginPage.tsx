@@ -72,7 +72,7 @@ export default function LoginPage({ portal = "staff" }: LoginPageProps) {
             </h1>
             <p className="text-green-600 font-medium mt-1">
               {isSuperAdminPortal
-                ? "Use the default superadmin account"
+                ? "Restricted access"
                 : "Use your assigned staff account"}
             </p>
           </div>
@@ -138,13 +138,6 @@ export default function LoginPage({ portal = "staff" }: LoginPageProps) {
               )}
             </button>
           </form>
-
-          {isSuperAdminPortal && (
-            <div className="mt-4 rounded-lg border border-green-100 bg-green-50 p-3 text-sm text-green-800">
-              Default local credentials: <span className="font-semibold">superadmin</span> /{" "}
-              <span className="font-semibold">admin123</span>
-            </div>
-          )}
 
           {/* Back to home */}
           <button
