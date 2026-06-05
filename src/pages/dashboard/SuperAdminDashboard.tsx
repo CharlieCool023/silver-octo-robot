@@ -398,6 +398,9 @@ function AllUsersTab() {
   const [search, setSearch] = useState("");
   const { data: users, refetch } = trpc.users.list.useQuery({ search: search || undefined });
   const toggleActive = trpc.users.update.useMutation({ onSuccess: () => refetch() });
+  const hardDelete = trpc.users.hardDelete.useMutation({ onSuccess: () => refetch() });
+
+  const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string; role: string } | null>(null);
 
   return (
     <div className="space-y-4">
@@ -408,18 +411,49 @@ function AllUsersTab() {
       <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50"><tr><th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th><th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Username</th><th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th><th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th><th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th></tr></thead>
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden sm:table-cell">Username</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden md:table-cell">Role</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+              </tr>
+            </thead>
             <tbody className="divide-y divide-gray-100">
               {users?.map((u) => (
                 <tr key={u.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-sm font-medium text-gray-800">{u.fullName}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{u.username}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{u.role.replace(/_/g, " ")}</td>
-                  <td className="px-4 py-3">{u.isActive ? <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">Active</span> : <span className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full">Inactive</span>}</td>
+                  <td className="px-4 py-3 text-sm font-medium text-gray-800">
+                    <div>{u.fullName}</div>
+                    <div className="text-xs text-gray-400 md:hidden capitalize">{u.role.replace(/_/g, " ")}</div>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-600 hidden sm:table-cell">{u.username}</td>
+                  <td className="px-4 py-3 text-sm text-gray-600 capitalize hidden md:table-cell">{u.role.replace(/_/g, " ")}</td>
                   <td className="px-4 py-3">
-                    <button onClick={() => toggleActive.mutate({ id: u.id, isActive: u.isActive ? 0 : 1 })} className="text-sm text-blue-600 hover:text-blue-700">
-                      {u.isActive ? "Deactivate" : "Activate"}
-                    </button>
+                    {u.isActive
+                      ? <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">Active</span>
+                      : <span className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full">Inactive</span>}
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      {u.role !== "super_admin" && (
+                        <button
+                          onClick={() => toggleActive.mutate({ id: u.id, isActive: u.isActive ? 0 : 1 })}
+                          className="text-sm text-blue-600 hover:text-blue-700"
+                        >
+                          {u.isActive ? "Deactivate" : "Activate"}
+                        </button>
+                      )}
+                      {u.role !== "super_admin" && (
+                        <button
+                          onClick={() => setDeleteTarget({ id: u.id, name: u.fullName, role: u.role })}
+                          className="text-red-500 hover:text-red-700"
+                          title="Permanently delete"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               )) || <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-400">No users found</td></tr>}
@@ -427,6 +461,47 @@ function AllUsersTab() {
           </table>
         </div>
       </div>
+
+      {/* Delete confirmation */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <div className="flex items-center gap-3 mb-1">
+              <AlertTriangle className="w-6 h-6 text-red-500 flex-shrink-0" />
+              <AlertDialogTitle>Delete Staff Account</AlertDialogTitle>
+            </div>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3 text-sm text-gray-600">
+                <p>
+                  You are about to permanently delete{" "}
+                  <span className="font-semibold text-gray-900">{deleteTarget?.name}</span>'s account
+                  ({deleteTarget?.role.replace(/_/g, " ")}).
+                </p>
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                  <p className="text-red-800 text-xs">
+                    <span className="font-semibold">This is permanent.</span> The account will be removed
+                    from the system entirely. Any evaluations or comments they submitted will remain
+                    attributed to their records but their login will stop working immediately.
+                  </p>
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={hardDelete.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (!deleteTarget) return;
+                hardDelete.mutate({ id: deleteTarget.id }, { onSuccess: () => setDeleteTarget(null) });
+              }}
+              disabled={hardDelete.isPending}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              {hardDelete.isPending ? "Deleting..." : "Delete Permanently"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
