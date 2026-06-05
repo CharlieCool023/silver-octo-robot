@@ -8,25 +8,34 @@ export const exportRouter = createRouter({
   // Export corps members as CSV
   csv: adminOrCommandantQuery
     .input(z.object({ batchId: z.number() }).optional())
-    .query(async () => {
+    .query(async ({ input }) => {
       const db = getDb();
 
-      // Get active batch (required)
-      const activeBatch = await db
-        .select()
-        .from(batches)
-        .where(eq(batches.isActive, 1))
-        .then((rows) => rows[0]);
-
-      if (!activeBatch) {
-        throw new Error("No active batch available for export");
+      // If a specific batchId is given use it, otherwise fall back to active batch
+      let targetBatch;
+      if (input?.batchId) {
+        targetBatch = await db
+          .select()
+          .from(batches)
+          .where(eq(batches.id, input.batchId))
+          .then((rows) => rows[0]);
+      } else {
+        targetBatch = await db
+          .select()
+          .from(batches)
+          .where(eq(batches.isActive, 1))
+          .then((rows) => rows[0]);
       }
 
-      // Always export from active batch, ignore input batchId
+      if (!targetBatch) {
+        throw new Error("Batch not found or no active batch available for export");
+      }
+
+      // Export from the target batch
       const members = await db
         .select()
         .from(corpsMembers)
-        .where(eq(corpsMembers.batchId, activeBatch.id));
+        .where(eq(corpsMembers.batchId, targetBatch.id));
 
       const rows = [];
       // Header
@@ -105,7 +114,7 @@ export const exportRouter = createRouter({
         )
         .join("\n");
 
-      return { csv, filename: `nysc-corps-members-${Date.now()}.csv` };
+      return { csv, filename: `nysc-${targetBatch.name.replace(/\s+/g, "-").toLowerCase()}-${targetBatch.year}.csv` };
     }),
 
   // Full report for print

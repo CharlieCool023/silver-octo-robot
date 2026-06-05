@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { createRouter, publicQuery, staffQuery, adminOrCommandantQuery } from "./middleware";
 import { getDb } from "./queries/connection";
-import { batches } from "@db/schema";
+import { batches, corpsMembers, evaluations, comments, commandantComments, higherInstitutions } from "@db/schema";
 import { eq, desc } from "drizzle-orm";
 
 export const batchesRouter = createRouter({
@@ -94,12 +94,32 @@ export const batchesRouter = createRouter({
       return { success: true };
     }),
 
-  // Delete batch
+  // Delete batch — permanently removes batch AND all associated data
   delete: adminOrCommandantQuery
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       const db = getDb();
+
+      // Get all corps members in this batch
+      const members = await db
+        .select({ id: corpsMembers.id })
+        .from(corpsMembers)
+        .where(eq(corpsMembers.batchId, input.id));
+
+      // For each member, delete all related child rows first
+      for (const member of members) {
+        await db.delete(evaluations).where(eq(evaluations.corpsMemberId, member.id));
+        await db.delete(comments).where(eq(comments.corpsMemberId, member.id));
+        await db.delete(commandantComments).where(eq(commandantComments.corpsMemberId, member.id));
+        await db.delete(higherInstitutions).where(eq(higherInstitutions.corpsMemberId, member.id));
+      }
+
+      // Delete all corps members in the batch
+      await db.delete(corpsMembers).where(eq(corpsMembers.batchId, input.id));
+
+      // Finally delete the batch itself
       await db.delete(batches).where(eq(batches.id, input.id));
+
       return { success: true };
     }),
 });

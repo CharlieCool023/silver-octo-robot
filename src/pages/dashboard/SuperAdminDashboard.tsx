@@ -11,10 +11,22 @@ import {
   XCircle,
   Trash2,
   Lock,
+  Download,
+  AlertTriangle,
 } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { trpc } from "@/providers/trpc";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 type Tab = "dashboard" | "commandants" | "batches" | "users" | "settings";
 
@@ -184,12 +196,63 @@ function BatchesTab() {
   const utils = trpc.useUtils();
   const { data: batches, refetch } = trpc.batches.list.useQuery();
   const createBatch = trpc.batches.create.useMutation({ onSuccess: () => refetch() });
-  const activate = trpc.batches.activate.useMutation({ onSuccess: () => { refetch(); utils.stats.dashboard.invalidate(); } });
-  const deactivate = trpc.batches.deactivate.useMutation({ onSuccess: () => { refetch(); utils.stats.dashboard.invalidate(); } });
-  const deleteBatch = trpc.batches.delete.useMutation({ onSuccess: () => refetch() });
+  const activate = trpc.batches.activate.useMutation({
+    onSuccess: () => { refetch(); utils.stats.dashboard.invalidate(); }
+  });
+  const deactivate = trpc.batches.deactivate.useMutation({
+    onSuccess: () => { refetch(); utils.stats.dashboard.invalidate(); }
+  });
+  const deleteBatch = trpc.batches.delete.useMutation({
+    onSuccess: () => { refetch(); utils.stats.dashboard.invalidate(); }
+  });
 
-  const [form, setForm] = useState({ name: "", year: 2025, state: "ondo" as "ondo" | "lagos", description: "" });
+  const [form, setForm] = useState({ name: "", year: new Date().getFullYear(), state: "ondo" as "ondo" | "lagos", description: "" });
   const [showForm, setShowForm] = useState(false);
+
+  // Delete flow state
+  const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null);
+  const [csvDownloaded, setCsvDownloaded] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const csvQuery = trpc.export.csv.useQuery(
+    { batchId: deleteTarget?.id ?? 0 },
+    { enabled: false } // only fetch on demand
+  );
+
+  const handleDownloadCsv = async () => {
+    if (!deleteTarget) return;
+    setIsDownloading(true);
+    try {
+      const result = await csvQuery.refetch();
+      if (result.data?.csv) {
+        const blob = new Blob([result.data.csv], { type: "text/csv" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = result.data.filename;
+        a.click();
+        URL.revokeObjectURL(url);
+        setCsvDownloaded(true);
+      }
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  const handleOpenDelete = (id: number, name: string) => {
+    setDeleteTarget({ id, name });
+    setCsvDownloaded(false);
+  };
+
+  const handleConfirmDelete = () => {
+    if (!deleteTarget) return;
+    deleteBatch.mutate({ id: deleteTarget.id }, {
+      onSuccess: () => {
+        setDeleteTarget(null);
+        setCsvDownloaded(false);
+      }
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -202,7 +265,7 @@ function BatchesTab() {
       </div>
 
       {showForm && (
-        <motion.form initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="bg-white rounded-xl p-6 shadow-sm border space-y-4" onSubmit={(e) => { e.preventDefault(); createBatch.mutate(form, { onSuccess: () => { setShowForm(false); setForm({ name: "", year: 2025, state: "ondo", description: "" }); } }); }}>
+        <motion.form initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="bg-white rounded-xl p-6 shadow-sm border space-y-4" onSubmit={(e) => { e.preventDefault(); createBatch.mutate(form, { onSuccess: () => { setShowForm(false); setForm({ name: "", year: new Date().getFullYear(), state: "ondo", description: "" }); } }); }}>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <input type="text" placeholder="Batch Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-green-500" required />
             <input type="number" placeholder="Year" value={form.year} onChange={(e) => setForm({ ...form, year: parseInt(e.target.value) })} className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-green-500" required />
@@ -222,22 +285,47 @@ function BatchesTab() {
       <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50"><tr><th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th><th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Year</th><th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">State</th><th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th><th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th></tr></thead>
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden sm:table-cell">Year</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden sm:table-cell">State</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+              </tr>
+            </thead>
             <tbody className="divide-y divide-gray-100">
               {batches?.map((b) => (
                 <tr key={b.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-sm font-medium text-gray-800">{b.name}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{b.year}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600 capitalize">{b.state}</td>
-                  <td className="px-4 py-3">{b.isActive ? <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">Active</span> : <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">Inactive</span>}</td>
+                  <td className="px-4 py-3 text-sm font-medium text-gray-800">
+                    <div>{b.name}</div>
+                    <div className="text-xs text-gray-400 sm:hidden">{b.year} · {b.state}</div>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-600 hidden sm:table-cell">{b.year}</td>
+                  <td className="px-4 py-3 text-sm text-gray-600 capitalize hidden sm:table-cell">{b.state}</td>
                   <td className="px-4 py-3">
-                    <div className="flex gap-2">
+                    {b.isActive
+                      ? <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">Active</span>
+                      : <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">Inactive</span>}
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex gap-2 items-center">
                       {b.isActive ? (
-                        <button onClick={() => deactivate.mutate({ id: b.id })} className="text-amber-600 hover:text-amber-700 text-sm" title="Deactivate"><XCircle className="w-4 h-4" /></button>
+                        <button onClick={() => deactivate.mutate({ id: b.id })} className="text-amber-600 hover:text-amber-700" title="Deactivate">
+                          <XCircle className="w-4 h-4" />
+                        </button>
                       ) : (
-                        <button onClick={() => activate.mutate({ id: b.id })} className="text-green-600 hover:text-green-700 text-sm" title="Activate"><CheckCircle className="w-4 h-4" /></button>
+                        <button onClick={() => activate.mutate({ id: b.id })} className="text-green-600 hover:text-green-700" title="Activate">
+                          <CheckCircle className="w-4 h-4" />
+                        </button>
                       )}
-                      <button onClick={() => deleteBatch.mutate({ id: b.id })} className="text-red-600 hover:text-red-700 text-sm" title="Delete"><Trash2 className="w-4 h-4" /></button>
+                      <button
+                        onClick={() => handleOpenDelete(b.id, b.name)}
+                        className="text-red-500 hover:text-red-700"
+                        title="Delete batch"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -246,6 +334,62 @@ function BatchesTab() {
           </table>
         </div>
       </div>
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) { setDeleteTarget(null); setCsvDownloaded(false); } }}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <div className="flex items-center gap-3 mb-1">
+              <AlertTriangle className="w-6 h-6 text-red-500 flex-shrink-0" />
+              <AlertDialogTitle>Delete Batch: {deleteTarget?.name}</AlertDialogTitle>
+            </div>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3 text-sm text-gray-600">
+                <p>
+                  This will <span className="font-semibold text-red-700">permanently delete</span> this
+                  batch along with <span className="font-semibold">all corps members, evaluations, comments,
+                  and education records</span> in it. This cannot be undone.
+                </p>
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                  <p className="font-semibold text-amber-800 mb-2">Step 1 — Download the data first</p>
+                  <p className="text-amber-700 text-xs mb-3">
+                    You must download the CSV backup before the delete button is enabled.
+                    This is your only chance to keep a record of this batch.
+                  </p>
+                  <button
+                    onClick={handleDownloadCsv}
+                    disabled={isDownloading || csvDownloaded}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors w-full justify-center ${
+                      csvDownloaded
+                        ? "bg-green-100 text-green-700 cursor-default"
+                        : "bg-amber-600 hover:bg-amber-700 text-white disabled:opacity-60"
+                    }`}
+                  >
+                    <Download className="w-4 h-4" />
+                    {isDownloading ? "Downloading..." : csvDownloaded ? "✓ CSV Downloaded" : "Download CSV Backup"}
+                  </button>
+                </div>
+                {csvDownloaded && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                    <p className="font-semibold text-red-800">Step 2 — Confirm permanent deletion</p>
+                    <p className="text-red-700 text-xs mt-1">The delete button below is now unlocked. Proceed only if you are absolutely certain.</p>
+                  </div>
+                )}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteBatch.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              disabled={!csvDownloaded || deleteBatch.isPending}
+              className="bg-red-600 hover:bg-red-700 text-white disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {deleteBatch.isPending ? "Deleting..." : "Delete Permanently"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
