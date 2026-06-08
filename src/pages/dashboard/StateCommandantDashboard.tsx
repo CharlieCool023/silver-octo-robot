@@ -122,73 +122,105 @@ function MembersTab() {
 }
 
 function MemberDetailView({ member }: { member: any }) {
+  // corpsMembers.get returns fields at top level
+  // evaluations: { platoonInstructor, manOWar }, comments, commandantComments
+  const piEval = member.evaluations?.platoonInstructor;
+  const mowEval = member.evaluations?.manOWar;
+
+  const evalFields: [string, string][] = [
+    ["Leadership & Initiative", "leadershipInitiative"],
+    ["Professional Bearing", "professionalBearing"],
+    ["Physical Fitness", "physicalFitness"],
+    ["Communication Skills", "communicationSkills"],
+    ["Technical Competence", "technicalCompetence"],
+    ["Teamwork & Cooperation", "teamworkCooperation"],
+    ["Reliability & Dependability", "reliabilityDependability"],
+    ["Respect for Dignity & Rights", "respectDignityRights"],
+  ];
+
   return (
-    <div className="space-y-6">
-      <div className="bg-white rounded-xl p-6 shadow-sm border">
+    <div className="space-y-4">
+      {/* Header card */}
+      <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border">
         <div className="flex items-start gap-4">
-          {member.member.passportPhoto ? (
-            <img src={member.member.passportPhoto} alt="" className="w-24 h-24 rounded-lg object-cover border" />
+          {member.passportPhoto ? (
+            <img src={member.passportPhoto} alt="" className="w-16 h-16 sm:w-24 sm:h-24 rounded-lg object-cover border flex-shrink-0" />
           ) : (
-            <div className="w-24 h-24 bg-gray-100 rounded-lg flex items-center justify-center"><Users className="w-10 h-10 text-gray-400" /></div>
+            <div className="w-16 h-16 sm:w-24 sm:h-24 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+              <Users className="w-8 h-8 text-gray-400" />
+            </div>
           )}
-          <div className="flex-1">
-            <h2 className="text-xl font-bold text-gray-800">{member.member.surname} {member.member.otherNames}</h2>
-            <p className="text-gray-500">{member.member.stateCode} | {member.member.callUpNumber}</p>
-            <p className="text-gray-500">Platoon {member.member.platoon}</p>
+          <div className="min-w-0">
+            <h2 className="text-lg sm:text-xl font-bold text-gray-800 truncate">{member.surname} {member.otherNames}</h2>
+            <p className="text-gray-500 text-sm">{member.stateCode} · {member.callUpNumber}</p>
+            <p className="text-gray-500 text-sm">Platoon {member.platoon}</p>
+            {member.phoneNumber && <p className="text-gray-400 text-xs mt-1">{member.phoneNumber}</p>}
           </div>
         </div>
       </div>
 
+      {/* Evaluations */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-white rounded-xl p-6 shadow-sm border">
+        <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border">
           <h3 className="font-semibold text-gray-800 mb-4">Platoon Instructor Evaluation</h3>
-          {member.piEvaluation ? (
+          {piEval ? (
             <div className="space-y-2 text-sm">
-              {Object.entries({
-                "Leadership & Initiative": member.piEvaluation.leadershipInitiative,
-                "Professional Bearing": member.piEvaluation.professionalBearing,
-                "Physical Fitness": member.piEvaluation.physicalFitness,
-                "Communication Skills": member.piEvaluation.communicationSkills,
-                "Technical Competence": member.piEvaluation.technicalCompetence,
-                "Teamwork & Cooperation": member.piEvaluation.teamworkCooperation,
-                "Reliability & Dependability": member.piEvaluation.reliabilityDependability,
-                "Respect for Dignity & Rights": member.piEvaluation.respectDignityRights,
-              }).map(([label, score]) => (
-                <div key={label} className="flex justify-between"><span>{label}</span><span className="font-medium">{String(score)}/10</span></div>
+              {evalFields.map(([label, key]) => (
+                <div key={key} className="flex justify-between">
+                  <span className="text-gray-600">{label}</span>
+                  <span className="font-medium">{piEval[key]}/10</span>
+                </div>
               ))}
-              <div className="flex justify-between pt-2 border-t font-bold"><span>Overall</span><span className="text-green-600">{member.piEvaluation.overallAverage}</span></div>
+              <div className="flex justify-between pt-2 border-t font-bold text-base">
+                <span>Overall</span>
+                <span className="text-green-600">{piEval.overallAverage}</span>
+              </div>
             </div>
           ) : <p className="text-gray-400 text-sm">Not evaluated yet</p>}
         </div>
 
-        <div className="bg-white rounded-xl p-6 shadow-sm border">
+        <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border">
           <h3 className="font-semibold text-gray-800 mb-4">Man O'War Evaluation</h3>
-          {member.mowEvaluation ? (
+          {mowEval ? (
             <div className="space-y-2 text-sm">
-              {Object.entries({
-                "Leadership & Initiative": member.mowEvaluation.leadershipInitiative,
-                "Professional Bearing": member.mowEvaluation.professionalBearing,
-                "Physical Fitness": member.mowEvaluation.physicalFitness,
-                "Communication Skills": member.mowEvaluation.communicationSkills,
-                "Technical Competence": member.mowEvaluation.technicalCompetence,
-                "Teamwork & Cooperation": member.mowEvaluation.teamworkCooperation,
-                "Reliability & Dependability": member.mowEvaluation.reliabilityDependability,
-                "Respect for Dignity & Rights": member.mowEvaluation.respectDignityRights,
-              }).map(([label, score]) => (
-                <div key={label} className="flex justify-between"><span>{label}</span><span className="font-medium">{String(score)}/10</span></div>
+              {evalFields.map(([label, key]) => (
+                <div key={key} className="flex justify-between">
+                  <span className="text-gray-600">{label}</span>
+                  <span className="font-medium">{mowEval[key]}/10</span>
+                </div>
               ))}
-              <div className="flex justify-between pt-2 border-t font-bold"><span>Overall</span><span className="text-green-600">{member.mowEvaluation.overallAverage}</span></div>
+              <div className="flex justify-between pt-2 border-t font-bold text-base">
+                <span>Overall</span>
+                <span className="text-green-600">{mowEval.overallAverage}</span>
+              </div>
             </div>
           ) : <p className="text-gray-400 text-sm">Not evaluated yet</p>}
         </div>
       </div>
 
+      {/* Soldier comments */}
       {member.comments?.length > 0 && (
-        <div className="bg-white rounded-xl p-6 shadow-sm border">
+        <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border">
           <h3 className="font-semibold text-gray-800 mb-4">Soldier Comments</h3>
           <div className="space-y-3">
             {member.comments.map((c: any) => (
-              <div key={c.id} className="bg-gray-50 rounded-lg p-3 text-sm"><p className="text-gray-700">{c.comment}</p></div>
+              <div key={c.id} className="bg-gray-50 rounded-lg p-3 text-sm">
+                <p className="text-gray-700">{c.comment}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Commandant comments */}
+      {member.commandantComments?.length > 0 && (
+        <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border">
+          <h3 className="font-semibold text-gray-800 mb-4">Commandant Comments</h3>
+          <div className="space-y-3">
+            {member.commandantComments.map((c: any) => (
+              <div key={c.id} className="bg-yellow-50 rounded-lg p-3 text-sm">
+                <p className="text-gray-700">{c.comment}</p>
+              </div>
             ))}
           </div>
         </div>

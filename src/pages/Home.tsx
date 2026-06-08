@@ -15,9 +15,9 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-700 via-green-600 to-green-800 flex flex-col p-4">
+    <div className="h-screen bg-gradient-to-br from-green-700 via-green-600 to-green-800 flex flex-col p-4 overflow-hidden">
       {/* Main content — grows to fill space and centres vertically */}
-      <div className="flex-1 flex flex-col items-center justify-center">
+      <div className="flex-1 flex flex-col items-center justify-center min-h-0">
         <AnimatePresence mode="wait">
           {step === "splash" && <SplashScreen key="splash" />}
           {step === "step1" && (
@@ -31,9 +31,9 @@ export default function Home() {
         </AnimatePresence>
       </div>
 
-      {/* Footer — always pinned to the bottom */}
-      <div className="py-4 text-center">
-        <p className="text-white/80 text-sm">
+      {/* Footer — always visible at the bottom, never pushed off screen */}
+      <div className="py-3 text-center flex-shrink-0">
+        <p className="text-white/80 text-xs sm:text-sm">
           An effort from{" "}
           <span className="font-semibold text-white">
             Batch C 2025 Evaluation Committee
