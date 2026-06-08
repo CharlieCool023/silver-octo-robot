@@ -518,6 +518,7 @@ export default function RegisterPage() {
                                 value={inst.startDate}
                                 onChange={(e) => updateInstitution(index, "startDate", e.target.value)}
                                 className={`w-full px-3 py-2 border rounded-md outline-none focus:ring-2 focus:ring-green-500 text-sm ${errors[`inst_${index}_start`] ? "border-red-300" : "border-gray-300"}`}
+                                placeholder="Start Date"
                               />
                               {errors[`inst_${index}_start`] && <p className="text-red-500 text-xs">{errors[`inst_${index}_start`]}</p>}
                             </div>
@@ -527,6 +528,7 @@ export default function RegisterPage() {
                                 value={inst.endDate}
                                 onChange={(e) => updateInstitution(index, "endDate", e.target.value)}
                                 className={`w-full px-3 py-2 border rounded-md outline-none focus:ring-2 focus:ring-green-500 text-sm ${errors[`inst_${index}_end`] ? "border-red-300" : "border-gray-300"}`}
+                                placeholder="End Date"
                               />
                               {errors[`inst_${index}_end`] && <p className="text-red-500 text-xs">{errors[`inst_${index}_end`]}</p>}
                             </div>
