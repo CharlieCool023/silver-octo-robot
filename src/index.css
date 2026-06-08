@@ -92,10 +92,14 @@
     overflow-x: hidden;
   }
 
-  /* Better input/textarea appearance on iOS — but NOT select */
-  input, textarea {
+  /* Better input/textarea appearance on iOS — but NOT select or date inputs */
+  input:not([type="date"]):not([type="time"]):not([type="datetime-local"]), textarea {
     @apply appearance-none;
-    font-size: 16px; /* prevents iOS zoom on focus */
+  }
+
+  /* All text-like inputs still get 16px to prevent iOS zoom */
+  input, textarea, select {
+    font-size: 16px;
   }
 
   /* Select needs its own treatment — keep appearance-none for custom styling
