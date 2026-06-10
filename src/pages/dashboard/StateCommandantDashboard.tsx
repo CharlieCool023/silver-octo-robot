@@ -166,9 +166,9 @@ function MemberDetailView({ member }: { member: any }) {
           {piEval ? (
             <div className="space-y-2 text-sm">
               {evalFields.map(([label, key]) => (
-                <div key={key} className="flex justify-between">
+                <div key={key} className="flex flex-col gap-0.5 sm:flex-row sm:justify-between sm:gap-4">
                   <span className="text-gray-600">{label}</span>
-                  <span className="font-medium">{piEval[key]}/10</span>
+                  <span className="font-medium sm:text-right">{piEval[key]}/10</span>
                 </div>
               ))}
               <div className="flex justify-between pt-2 border-t font-bold text-base">
@@ -184,9 +184,9 @@ function MemberDetailView({ member }: { member: any }) {
           {mowEval ? (
             <div className="space-y-2 text-sm">
               {evalFields.map(([label, key]) => (
-                <div key={key} className="flex justify-between">
+                <div key={key} className="flex flex-col gap-0.5 sm:flex-row sm:justify-between sm:gap-4">
                   <span className="text-gray-600">{label}</span>
-                  <span className="font-medium">{mowEval[key]}/10</span>
+                  <span className="font-medium sm:text-right">{mowEval[key]}/10</span>
                 </div>
               ))}
               <div className="flex justify-between pt-2 border-t font-bold text-base">

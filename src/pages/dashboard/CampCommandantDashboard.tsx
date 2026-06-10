@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate } from "react-router";
 import { motion } from "framer-motion";
 import {
   Users, UserCog, Printer, Download, Plus, Search, CheckCircle, XCircle,
-  ChevronLeft, ChevronRight, ArrowLeft, Shield,
+  ChevronLeft, ChevronRight, ArrowLeft,
 } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import ActionsMenu from "@/components/ActionsMenu";
@@ -310,7 +310,7 @@ function MemberDetail({
         {showCommentForm && (
           <div className="mt-4 space-y-3">
             <textarea value={commentForm.comment} onChange={(e) => setCommentForm({ ...commentForm, comment: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-green-500 h-24" placeholder="Enter your comment..." />
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-3">
               <button onClick={onSubmitComment} disabled={isSubmitting} className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 text-sm">{isSubmitting ? "Submitting..." : "Submit"}</button>
               <button onClick={() => setCommentForm({ corpsMemberId: 0, comment: "" })} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm">Cancel</button>
             </div>
@@ -323,9 +323,9 @@ function MemberDetail({
 
 function EvalRow({ label, value }: { label: string; value: number }) {
   return (
-    <div className="flex justify-between">
+    <div className="flex flex-col gap-0.5 sm:flex-row sm:justify-between sm:gap-4">
       <span className="text-gray-600">{label}</span>
-      <span className="font-medium">{value}/10</span>
+      <span className="font-medium sm:text-right">{value}/10</span>
     </div>
   );
 }
@@ -370,7 +370,7 @@ function StaffTab() {
               {Array.from({ length: 10 }, (_, i) => (<option key={i + 1} value={i + 1}>Platoon {i + 1}</option>))}
             </select>
           </div>
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-3">
             <button type="submit" disabled={createUser.isPending} className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50">{createUser.isPending ? "Creating..." : "Create"}</button>
             <button type="button" onClick={() => setShowForm(false)} className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
           </div>
@@ -441,9 +441,9 @@ function BatchesTab() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
         <h2 className="text-lg font-semibold text-gray-800">Batches</h2>
-        <button onClick={() => setShowForm(!showForm)} className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+        <button onClick={() => setShowForm(!showForm)} className="flex w-full sm:w-auto items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
           <Plus className="w-4 h-4" /> Create Batch
         </button>
       </div>
@@ -459,7 +459,7 @@ function BatchesTab() {
             </select>
           </div>
           <textarea placeholder="Description (optional)" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-green-500" />
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-3">
             <button type="submit" disabled={createBatch.isPending} className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50">{createBatch.isPending ? "Creating..." : "Create"}</button>
             <button type="button" onClick={() => setShowForm(false)} className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
           </div>

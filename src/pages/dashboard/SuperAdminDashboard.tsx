@@ -108,9 +108,9 @@ function CommandantsTab() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
         <h2 className="text-lg font-semibold text-gray-800">Commandants</h2>
-        <button onClick={() => setShowForm(!showForm)} className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+        <button onClick={() => setShowForm(!showForm)} className="flex w-full sm:w-auto items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
           <Plus className="w-4 h-4" />
           Create User
         </button>
@@ -136,7 +136,7 @@ function CommandantsTab() {
               <option value="lagos">Lagos</option>
             </select>
           </div>
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-3">
             <button type="submit" disabled={createUser.isPending} className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50">
               {createUser.isPending ? "Creating..." : "Create"}
             </button>
@@ -256,9 +256,9 @@ function BatchesTab() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
         <h2 className="text-lg font-semibold text-gray-800">Batches</h2>
-        <button onClick={() => setShowForm(!showForm)} className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+        <button onClick={() => setShowForm(!showForm)} className="flex w-full sm:w-auto items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
           <Plus className="w-4 h-4" />
           Create Batch
         </button>
@@ -275,7 +275,7 @@ function BatchesTab() {
             </select>
           </div>
           <textarea placeholder="Description (optional)" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-green-500" />
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-3">
             <button type="submit" disabled={createBatch.isPending} className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50">{createBatch.isPending ? "Creating..." : "Create"}</button>
             <button type="button" onClick={() => setShowForm(false)} className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
           </div>
@@ -541,9 +541,9 @@ function SettingsTab() {
       <div className="bg-white rounded-xl p-6 shadow-sm border space-y-4">
         <h3 className="text-lg font-semibold text-gray-800">System Settings</h3>
         <div className="space-y-3">
-          <div className="flex justify-between py-2 border-b"><span className="text-gray-500">System Name</span><span className="font-medium">NYSC Camp Evaluation System</span></div>
-          <div className="flex justify-between py-2 border-b"><span className="text-gray-500">Admin Name</span><span className="font-medium">{user?.fullName}</span></div>
-          <div className="flex justify-between py-2 border-b"><span className="text-gray-500">Admin Role</span><span className="font-medium">Super Admin</span></div>
+          <div className="flex flex-col sm:flex-row sm:justify-between gap-1 py-2 border-b"><span className="text-gray-500">System Name</span><span className="font-medium sm:text-right">NYSC Camp Evaluation System</span></div>
+          <div className="flex flex-col sm:flex-row sm:justify-between gap-1 py-2 border-b"><span className="text-gray-500">Admin Name</span><span className="font-medium sm:text-right">{user?.fullName}</span></div>
+          <div className="flex flex-col sm:flex-row sm:justify-between gap-1 py-2 border-b"><span className="text-gray-500">Admin Role</span><span className="font-medium sm:text-right">Super Admin</span></div>
         </div>
       </div>
 
@@ -561,7 +561,7 @@ function SettingsTab() {
             <input type="password" placeholder="Current Password" value={passwordForm.currentPassword} onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-green-500" required />
             <input type="password" placeholder="New Password" value={passwordForm.newPassword} onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-green-500" required />
             <input type="password" placeholder="Confirm New Password" value={passwordForm.confirmPassword} onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-green-500" required />
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-3">
               <button type="submit" disabled={changePassword.isPending} className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50">
                 {changePassword.isPending ? "Changing..." : "Change"}
               </button>

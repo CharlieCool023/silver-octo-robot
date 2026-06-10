@@ -170,13 +170,13 @@ function CommentForm({
 
       {member && (
         <div>
-          <h2 className="text-2xl font-bold text-gray-800">{member.surname} {member.otherNames}</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-800 break-words">{member.surname} {member.otherNames}</h2>
           <p className="text-sm text-gray-500">{member.stateCode} | Platoon {member.platoon}</p>
         </div>
       )}
 
       {/* My Comment Form */}
-      <div className="bg-white rounded-xl p-6 shadow-sm border">
+      <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border">
         <h2 className="text-lg font-semibold text-gray-800 mb-1">Add Observation</h2>
         <p className="text-sm text-gray-500 mb-4">Write your observations about this corps member</p>
 
@@ -205,7 +205,7 @@ function CommentForm({
 
       {/* Previous Comments */}
       {allComments.length > 0 && (
-        <div className="bg-white rounded-xl p-6 shadow-sm border">
+        <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border">
           <h3 className="font-semibold text-gray-800 mb-4">All Comments</h3>
           <div className="space-y-3">
             {allComments.map((c) => (

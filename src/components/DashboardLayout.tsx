@@ -225,11 +225,11 @@ export default function DashboardLayout({
       {/* Main Content */}
       <div className="flex-1 min-w-0">
         {/* Mobile Header */}
-        <header className="lg:hidden bg-white border-b px-4 py-3 flex items-center gap-3 sticky top-0 z-30">
-          <button onClick={() => setSidebarOpen(true)} className="p-2 hover:bg-gray-100 rounded-lg">
+        <header className="lg:hidden bg-white border-b px-3 sm:px-4 py-3 flex items-center gap-3 sticky top-0 z-30">
+          <button onClick={() => setSidebarOpen(true)} className="p-2 hover:bg-gray-100 rounded-lg flex-shrink-0">
             <Menu className="w-5 h-5" />
           </button>
-          <Shield className="w-6 h-6 text-green-600" />
+          <Shield className="w-6 h-6 text-green-600 flex-shrink-0" />
           <div className="min-w-0">
             <h1 className="font-bold text-gray-800 leading-tight truncate">{user.fullName}</h1>
             <p className="text-xs text-gray-500 leading-tight truncate">{roleDisplay}</p>
@@ -237,10 +237,10 @@ export default function DashboardLayout({
         </header>
 
         {/* Page Content */}
-        <main className="p-4 md:p-6 lg:p-8">
+        <main className="p-3 sm:p-4 md:p-6 lg:p-8">
           {title && (
             <div className="mb-6">
-              <h1 className="text-2xl font-bold text-gray-800">{title}</h1>
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-800 break-words">{title}</h1>
             </div>
           )}
           {children}

@@ -233,7 +233,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
+    <div className="min-h-screen bg-gray-50 py-4 px-3 sm:py-8 sm:px-4">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
@@ -263,9 +263,9 @@ export default function RegisterPage() {
               initial={{ opacity: 0, x: 50 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -50 }}
-              className="bg-white rounded-2xl shadow-lg p-6 md:p-8"
+              className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 md:p-8"
             >
-              <h1 className="text-2xl font-bold text-gray-800 mb-1">Corps Member Registration</h1>
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-800 mb-1">Corps Member Registration</h1>
               <p className="text-gray-500 mb-6">Fill in your details carefully</p>
 
               {errors.submit && (
@@ -278,7 +278,7 @@ export default function RegisterPage() {
                 {/* Passport Photo */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Passport Photo</label>
-                  <div className="flex items-center gap-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                     {form.passportPhoto ? (
                       <img src={form.passportPhoto} alt="Preview" className="w-20 h-20 rounded-lg object-cover border" />
                     ) : (
@@ -480,12 +480,12 @@ export default function RegisterPage() {
 
                 {/* Higher Institutions */}
                 <div>
-                  <div className="flex items-center justify-between mb-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
                     <label className="text-sm font-medium text-gray-700">Higher Institutions *</label>
                     <button
                       type="button"
                       onClick={addInstitution}
-                      className="flex items-center gap-1 text-sm text-green-600 hover:text-green-700 font-medium"
+                      className="flex w-fit items-center gap-1 text-sm text-green-600 hover:text-green-700 font-medium"
                     >
                       <Plus className="w-4 h-4" />
                       Add Another
@@ -493,7 +493,7 @@ export default function RegisterPage() {
                   </div>
                   <div className="space-y-3">
                     {form.institutions.map((inst, index) => (
-                      <div key={index} className="bg-gray-50 rounded-lg p-4 relative">
+                      <div key={index} className="bg-gray-50 rounded-lg p-3 sm:p-4 relative">
                         {form.institutions.length > 1 && (
                           <button
                             onClick={() => removeInstitution(index)}
@@ -511,24 +511,26 @@ export default function RegisterPage() {
                             placeholder="Institution Name"
                           />
                           {errors[`inst_${index}_name`] && <p className="text-red-500 text-xs">{errors[`inst_${index}_name`]}</p>}
-                          <div className="grid grid-cols-2 gap-3">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
+                              <label className="block text-xs font-medium text-gray-600 mb-1">Start Date</label>
                               <input
                                 type="date"
                                 value={inst.startDate}
                                 onChange={(e) => updateInstitution(index, "startDate", e.target.value)}
-                                className={`w-full px-3 py-2 border rounded-md outline-none focus:ring-2 focus:ring-green-500 text-sm ${errors[`inst_${index}_start`] ? "border-red-300" : "border-gray-300"}`}
-                                placeholder="Start Date"
+                                className={`w-full min-w-0 px-3 py-2 border rounded-md bg-white outline-none focus:ring-2 focus:ring-green-500 text-sm ${errors[`inst_${index}_start`] ? "border-red-300" : "border-gray-300"}`}
+                                aria-label="Institution start date"
                               />
                               {errors[`inst_${index}_start`] && <p className="text-red-500 text-xs">{errors[`inst_${index}_start`]}</p>}
                             </div>
                             <div>
+                              <label className="block text-xs font-medium text-gray-600 mb-1">End Date</label>
                               <input
                                 type="date"
                                 value={inst.endDate}
                                 onChange={(e) => updateInstitution(index, "endDate", e.target.value)}
-                                className={`w-full px-3 py-2 border rounded-md outline-none focus:ring-2 focus:ring-green-500 text-sm ${errors[`inst_${index}_end`] ? "border-red-300" : "border-gray-300"}`}
-                                placeholder="End Date"
+                                className={`w-full min-w-0 px-3 py-2 border rounded-md bg-white outline-none focus:ring-2 focus:ring-green-500 text-sm ${errors[`inst_${index}_end`] ? "border-red-300" : "border-gray-300"}`}
+                                aria-label="Institution end date"
                               />
                               {errors[`inst_${index}_end`] && <p className="text-red-500 text-xs">{errors[`inst_${index}_end`]}</p>}
                             </div>
@@ -557,9 +559,9 @@ export default function RegisterPage() {
               initial={{ opacity: 0, x: 50 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -50 }}
-              className="bg-white rounded-2xl shadow-lg p-6 md:p-8"
+              className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 md:p-8"
             >
-              <h1 className="text-2xl font-bold text-gray-800 mb-1">Preview</h1>
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-800 mb-1">Preview</h1>
               <p className="text-gray-500 mb-6">Review your information</p>
 
               <div className="space-y-4">
@@ -602,7 +604,7 @@ export default function RegisterPage() {
                 )}
               </div>
 
-              <div className="flex gap-3 mt-6">
+              <div className="flex flex-col sm:flex-row gap-3 mt-6">
                 <button
                   onClick={() => setStep(1)}
                   className="flex-1 py-3 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
@@ -627,13 +629,13 @@ export default function RegisterPage() {
               initial={{ opacity: 0, x: 50 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -50 }}
-              className="bg-white rounded-2xl shadow-lg p-6 md:p-8"
+              className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 md:p-8"
             >
               <div className="text-center mb-6">
                 <div className="bg-amber-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                   <AlertTriangle className="w-8 h-8 text-amber-600" />
                 </div>
-                <h1 className="text-2xl font-bold text-gray-800">Confirm Submission</h1>
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Confirm Submission</h1>
                 <p className="text-gray-500 mt-2">
                   Please note that this form can only be submitted once. Verify all your information before proceeding.
                 </p>
@@ -652,7 +654,7 @@ export default function RegisterPage() {
                 <p className="text-sm text-gray-600"><span className="font-medium">Platoon:</span> {form.platoon}</p>
               </div>
 
-              <div className="flex gap-3">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <button
                   onClick={() => setStep(2)}
                   className="flex-1 py-3 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
@@ -682,7 +684,7 @@ export default function RegisterPage() {
               key="step4"
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="bg-white rounded-2xl shadow-lg p-6 md:p-8 text-center"
+              className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 md:p-8 text-center"
             >
               <motion.div
                 initial={{ scale: 0 }}
@@ -692,7 +694,7 @@ export default function RegisterPage() {
               >
                 <Check className="w-10 h-10 text-green-600" />
               </motion.div>
-              <h1 className="text-2xl font-bold text-gray-800 mb-2">Registration Successful!</h1>
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">Registration Successful!</h1>
               <p className="text-gray-500 mb-6">
                 Your details have been submitted successfully. Your camp officials will review your information.
               </p>
@@ -725,9 +727,9 @@ function PreviewSection({ title, children }: { title: string; children: React.Re
 
 function PreviewItem({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex justify-between text-sm">
+    <div className="flex flex-col gap-0.5 text-sm sm:flex-row sm:justify-between sm:gap-4">
       <span className="text-gray-500">{label}</span>
-      <span className="font-medium text-gray-800">{value || "-"}</span>
+      <span className="font-medium text-gray-800 break-words sm:text-right">{value || "-"}</span>
     </div>
   );
 }

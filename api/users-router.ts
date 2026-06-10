@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { createRouter, staffQuery, adminOrCommandantQuery } from "./middleware";
+import { TRPCError } from "@trpc/server";
+import { createRouter, staffQuery, adminOrCommandantQuery, superAdminQuery } from "./middleware";
 import { getDb } from "./queries/connection";
 import { staffUsers } from "@db/schema";
 import { eq, like, and, or, inArray } from "drizzle-orm";
@@ -161,6 +162,35 @@ export const usersRouter = createRouter({
         .update(staffUsers)
         .set({ isActive: 0 })
         .where(eq(staffUsers.id, input.id));
+      return { success: true };
+    }),
+
+  // Permanently remove a staff user from the database.
+  hardDelete: superAdminQuery
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      const db = getDb();
+      const user = await db
+        .select()
+        .from(staffUsers)
+        .where(eq(staffUsers.id, input.id))
+        .then((rows) => rows[0]);
+
+      if (!user) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "User not found",
+        });
+      }
+
+      if (user.role === "super_admin") {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Super admin accounts cannot be deleted",
+        });
+      }
+
+      await db.delete(staffUsers).where(eq(staffUsers.id, input.id));
       return { success: true };
     }),
 

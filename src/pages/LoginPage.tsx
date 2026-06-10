@@ -49,13 +49,13 @@ export default function LoginPage({ portal = "staff" }: LoginPageProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-700 via-green-600 to-green-800 flex items-center justify-center p-4">
+    <div className="min-h-svh bg-gradient-to-br from-green-700 via-green-600 to-green-800 flex items-center justify-center p-3 sm:p-4">
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-md"
       >
-        <div className="bg-white rounded-2xl p-8 shadow-2xl">
+        <div className="relative bg-white rounded-2xl p-5 sm:p-8 shadow-2xl">
           {/* Header */}
           <div className="text-center mb-8">
             <button

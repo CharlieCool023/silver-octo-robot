@@ -15,7 +15,7 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="h-screen bg-gradient-to-br from-green-700 via-green-600 to-green-800 flex flex-col p-4 overflow-hidden">
+    <div className="min-h-svh bg-gradient-to-br from-green-700 via-green-600 to-green-800 flex flex-col p-4 overflow-y-auto overflow-x-hidden">
       {/* Main content — grows to fill space and centres vertically */}
       <div className="flex-1 flex flex-col items-center justify-center min-h-0">
         <AnimatePresence mode="wait">
@@ -56,16 +56,16 @@ function SplashScreen() {
         initial={{ y: 20 }}
         animate={{ y: 0 }}
         transition={{ delay: 0.3, type: "spring" }}
-        className="bg-white/20 backdrop-blur-sm rounded-full p-8 mb-6"
+        className="bg-white/20 backdrop-blur-sm rounded-full p-6 sm:p-8 mb-6"
       >
-        <Shield className="w-20 h-20 text-white" />
+        <Shield className="w-16 h-16 sm:w-20 sm:h-20 text-white" />
       </motion.div>
 
       <motion.h1
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5 }}
-        className="text-4xl font-bold text-white mb-2"
+        className="text-3xl sm:text-4xl font-bold text-white mb-2"
       >
         NYSC
       </motion.h1>
@@ -74,7 +74,7 @@ function SplashScreen() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.7 }}
-        className="text-green-100 text-xl"
+        className="text-green-100 text-lg sm:text-xl"
       >
         Camp Evaluation System
       </motion.p>
@@ -123,7 +123,7 @@ function Step1({ onNext }: { onNext: (isCorpsMember: boolean) => void }) {
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.15 }}
           onClick={() => onNext(true)}
-          className="w-full py-4 px-6 bg-white hover:bg-green-50 text-green-800 rounded-2xl font-semibold text-base transition-colors flex items-center justify-between group shadow-lg"
+          className="w-full py-4 px-4 sm:px-6 bg-white hover:bg-green-50 text-green-800 rounded-2xl font-semibold text-base transition-colors flex items-center justify-between gap-3 group shadow-lg"
         >
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -142,7 +142,7 @@ function Step1({ onNext }: { onNext: (isCorpsMember: boolean) => void }) {
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.25 }}
           onClick={() => onNext(false)}
-          className="w-full py-4 px-6 bg-white/15 hover:bg-white/25 text-white rounded-2xl font-semibold text-base transition-colors flex items-center justify-between group border border-white/30"
+          className="w-full py-4 px-4 sm:px-6 bg-white/15 hover:bg-white/25 text-white rounded-2xl font-semibold text-base transition-colors flex items-center justify-between gap-3 group border border-white/30"
         >
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">

@@ -203,19 +203,19 @@ function EvaluationForm({
 
       {member && (
         <div>
-          <h2 className="text-2xl font-bold text-gray-800">{member.surname} {member.otherNames}</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-800 break-words">{member.surname} {member.otherNames}</h2>
           <p className="text-sm text-gray-500">{member.stateCode} | Platoon {member.platoon}</p>
         </div>
       )}
 
-      <div className="bg-white rounded-xl p-6 shadow-sm border">
+      <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border">
         <h3 className="text-lg font-semibold text-gray-800 mb-2">Man O'War Evaluation</h3>
         {existingEval && <p className="text-green-600 text-sm mb-4 flex items-center gap-1"><CheckCircle className="w-4 h-4" /> Previously evaluated. You can update.</p>}
 
         <div className="space-y-6">
           {EVALUATION_CATEGORIES.map((cat) => (
             <div key={cat.key}>
-              <div className="flex justify-between items-center mb-2">
+              <div className="flex flex-col gap-1 sm:flex-row sm:justify-between sm:items-center mb-2">
                 <label className="text-sm font-medium text-gray-700">{cat.label}</label>
                 <div className="flex items-center gap-2">
                   <span className="text-lg font-bold text-orange-600 w-8 text-right">{scores[cat.key]}</span>
@@ -240,7 +240,7 @@ function EvaluationForm({
         </div>
 
         <div className="mt-6 pt-4 border-t">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col gap-1 sm:flex-row sm:justify-between sm:items-center">
             <span className="font-semibold text-gray-800">Overall Average Score</span>
             <span className="text-3xl font-bold text-orange-600">{overallAverage}</span>
           </div>
