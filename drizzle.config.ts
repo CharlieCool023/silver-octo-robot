@@ -12,5 +12,6 @@ export default defineConfig({
   dialect: "mysql",
   dbCredentials: {
     url: connectionString,
+    ssl: { rejectUnauthorized: false },
   },
 });
