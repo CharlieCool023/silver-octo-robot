@@ -77,56 +77,45 @@ export const corpsMembersRouter = createRouter({
             .offset(input?.offset || 0)
             .orderBy(desc(corpsMembers.createdAt)));
 
-      // Get evaluation status for each member
-      const membersWithStatus = await Promise.all(
-        members.map(async (member) => {
-          const piEval = await db
-            .select()
-            .from(evaluations)
-            .where(
-              and(
-                eq(evaluations.corpsMemberId, member.id),
-                eq(evaluations.evaluatorRole, "platoon_instructor")
-              )
-            )
-            .then((rows) => rows[0]);
+      // Fetch all evaluation statuses in 3 bulk queries instead of N*4 queries
+      const memberIds = members.map((m) => m.id);
 
-          const mowEval = await db
-            .select()
-            .from(evaluations)
-            .where(
-              and(
-                eq(evaluations.corpsMemberId, member.id),
-                eq(evaluations.evaluatorRole, "man_o_war_instructor")
-              )
-            )
-            .then((rows) => rows[0]);
+      if (memberIds.length === 0) return [];
 
-          const soldierComments = await db
-            .select()
-            .from(comments)
-            .where(eq(comments.corpsMemberId, member.id));
+      const idList = memberIds.join(",");
 
-          const cmdComments = await db
-            .select()
-            .from(commandantComments)
-            .where(eq(commandantComments.corpsMemberId, member.id));
+      const [piEvals, mowEvals, soldierCommentsList, cmdCommentsList] = await Promise.all([
+        db.select({ corpsMemberId: evaluations.corpsMemberId, overallAverage: evaluations.overallAverage })
+          .from(evaluations)
+          .where(sql`corps_member_id IN (${sql.raw(idList)}) AND evaluator_role = 'platoon_instructor'`),
+        db.select({ corpsMemberId: evaluations.corpsMemberId, overallAverage: evaluations.overallAverage })
+          .from(evaluations)
+          .where(sql`corps_member_id IN (${sql.raw(idList)}) AND evaluator_role = 'man_o_war_instructor'`),
+        db.select({ corpsMemberId: comments.corpsMemberId })
+          .from(comments)
+          .where(sql`corps_member_id IN (${sql.raw(idList)})`),
+        db.select({ corpsMemberId: commandantComments.corpsMemberId })
+          .from(commandantComments)
+          .where(sql`corps_member_id IN (${sql.raw(idList)})`),
+      ]);
 
-          return {
-            ...member,
-            evaluationStatus: {
-              platoonInstructor: !!piEval,
-              manOWar: !!mowEval,
-              soldierComment: soldierComments.length > 0,
-              commandantComment: cmdComments.length > 0,
-              piScore: piEval?.overallAverage,
-              mowScore: mowEval?.overallAverage,
-            },
-          };
-        })
-      );
+      // Build lookup maps
+      const piMap = new Map(piEvals.map((e) => [e.corpsMemberId, e.overallAverage]));
+      const mowMap = new Map(mowEvals.map((e) => [e.corpsMemberId, e.overallAverage]));
+      const soldierSet = new Set(soldierCommentsList.map((c) => c.corpsMemberId));
+      const cmdSet = new Set(cmdCommentsList.map((c) => c.corpsMemberId));
 
-      return membersWithStatus;
+      return members.map((member) => ({
+        ...member,
+        evaluationStatus: {
+          platoonInstructor: piMap.has(member.id),
+          manOWar: mowMap.has(member.id),
+          soldierComment: soldierSet.has(member.id),
+          commandantComment: cmdSet.has(member.id),
+          piScore: piMap.get(member.id),
+          mowScore: mowMap.get(member.id),
+        },
+      }));
     }),
 
   // Get single corps member with all details

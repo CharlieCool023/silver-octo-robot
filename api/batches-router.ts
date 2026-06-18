@@ -2,7 +2,9 @@ import { z } from "zod";
 import { createRouter, publicQuery, staffQuery, adminOrCommandantQuery } from "./middleware";
 import { getDb } from "./queries/connection";
 import { batches, corpsMembers, evaluations, comments, commandantComments, higherInstitutions } from "@db/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, sql } from "drizzle-orm";
+
+const MAX_BATCHES = 3;
 
 export const batchesRouter = createRouter({
   // List all batches (public so registration page can check for active batch)
@@ -33,7 +35,7 @@ export const batchesRouter = createRouter({
         .then((rows) => rows[0] || null);
     }),
 
-  // Create batch
+  // Create batch — max 3 allowed
   create: adminOrCommandantQuery
     .input(
       z.object({
@@ -45,6 +47,19 @@ export const batchesRouter = createRouter({
     )
     .mutation(async ({ input }) => {
       const db = getDb();
+
+      // Enforce 3-batch limit
+      const countResult = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(batches)
+        .then((r) => r[0].count);
+
+      if (Number(countResult) >= MAX_BATCHES) {
+        throw new Error(
+          `Maximum of ${MAX_BATCHES} batches allowed. Please delete an existing batch before creating a new one.`
+        );
+      }
+
       const result = await db.insert(batches).values(input);
       return { success: true, id: Number(result[0].insertId) };
     }),

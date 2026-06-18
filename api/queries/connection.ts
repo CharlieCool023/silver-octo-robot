@@ -14,7 +14,9 @@ export function getDb() {
       uri: env.databaseUrl,
       ssl: { rejectUnauthorized: false },
       waitForConnections: true,
-      connectionLimit: 10,
+      connectionLimit: 5,      // conservative for 1GB RAM
+      queueLimit: 50,          // queue requests rather than reject under load
+      idleTimeout: 60000,      // release idle connections after 60s
     });
     instance = drizzle(pool, { schema: fullSchema, mode: "default" });
   }

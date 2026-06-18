@@ -254,15 +254,35 @@ function BatchesTab() {
     });
   };
 
+  const batchCount = batches?.length ?? 0;
+  const atLimit = batchCount >= 3;
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-        <h2 className="text-lg font-semibold text-gray-800">Batches</h2>
-        <button onClick={() => setShowForm(!showForm)} className="flex w-full sm:w-auto items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+        <div>
+          <h2 className="text-lg font-semibold text-gray-800">Batches</h2>
+          <p className="text-xs text-gray-400 mt-0.5">{batchCount}/3 batches used</p>
+        </div>
+        <button
+          onClick={() => setShowForm(!showForm)}
+          disabled={atLimit}
+          className="flex w-full sm:w-auto items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          title={atLimit ? "Delete an existing batch to create a new one" : undefined}
+        >
           <Plus className="w-4 h-4" />
           Create Batch
         </button>
       </div>
+
+      {atLimit && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-start gap-2">
+          <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+          <p className="text-sm text-amber-800">
+            Maximum of 3 batches reached. You must download and delete an existing batch before creating a new one.
+          </p>
+        </div>
+      )}
 
       {showForm && (
         <motion.form initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="bg-white rounded-xl p-6 shadow-sm border space-y-4" onSubmit={(e) => { e.preventDefault(); createBatch.mutate(form, { onSuccess: () => { setShowForm(false); setForm({ name: "", year: new Date().getFullYear(), state: "ondo", description: "" }); } }); }}>
