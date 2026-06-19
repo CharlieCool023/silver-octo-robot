@@ -2,7 +2,7 @@ import { z } from "zod";
 import { createRouter, publicQuery, staffQuery, adminOrCommandantQuery } from "./middleware";
 import { getDb } from "./queries/connection";
 import { batches, corpsMembers, evaluations, comments, commandantComments, higherInstitutions } from "@db/schema";
-import { eq, desc, sql } from "drizzle-orm";
+import { eq, desc, sql, inArray } from "drizzle-orm";
 
 const MAX_BATCHES = 3;
 
@@ -115,26 +115,63 @@ export const batchesRouter = createRouter({
     .mutation(async ({ input }) => {
       const db = getDb();
 
-      // Get all corps members in this batch
-      const members = await db
-        .select({ id: corpsMembers.id })
-        .from(corpsMembers)
-        .where(eq(corpsMembers.batchId, input.id));
+      return db.transaction(async (tx) => {
+        // Get all corps members in this batch
+        const members = await tx
+          .select({ id: corpsMembers.id })
+          .from(corpsMembers)
+          .where(eq(corpsMembers.batchId, input.id));
 
-      // For each member, delete all related child rows first
-      for (const member of members) {
-        await db.delete(evaluations).where(eq(evaluations.corpsMemberId, member.id));
-        await db.delete(comments).where(eq(comments.corpsMemberId, member.id));
-        await db.delete(commandantComments).where(eq(commandantComments.corpsMemberId, member.id));
-        await db.delete(higherInstitutions).where(eq(higherInstitutions.corpsMemberId, member.id));
-      }
+        const memberIds = members.map((member) => member.id);
 
-      // Delete all corps members in the batch
-      await db.delete(corpsMembers).where(eq(corpsMembers.batchId, input.id));
+        if (memberIds.length > 0) {
+          await tx.delete(evaluations).where(inArray(evaluations.corpsMemberId, memberIds));
+          await tx.delete(comments).where(inArray(comments.corpsMemberId, memberIds));
+          await tx.delete(commandantComments).where(inArray(commandantComments.corpsMemberId, memberIds));
+          await tx.delete(higherInstitutions).where(inArray(higherInstitutions.corpsMemberId, memberIds));
+        }
 
-      // Finally delete the batch itself
-      await db.delete(batches).where(eq(batches.id, input.id));
+        await tx.delete(corpsMembers).where(eq(corpsMembers.batchId, input.id));
+        await tx.delete(batches).where(eq(batches.id, input.id));
 
-      return { success: true };
+        const [remainingBatch, remainingMembers] = await Promise.all([
+          tx.select({ count: sql<number>`count(*)` }).from(batches).where(eq(batches.id, input.id)),
+          tx.select({ count: sql<number>`count(*)` }).from(corpsMembers).where(eq(corpsMembers.batchId, input.id)),
+        ]);
+
+        const remaining = {
+          batches: Number(remainingBatch[0]?.count ?? 0),
+          corpsMembers: Number(remainingMembers[0]?.count ?? 0),
+          evaluations: 0,
+          comments: 0,
+          commandantComments: 0,
+          higherInstitutions: 0,
+        };
+
+        if (memberIds.length > 0) {
+          const [
+            remainingEvaluations,
+            remainingComments,
+            remainingCommandantComments,
+            remainingInstitutions,
+          ] = await Promise.all([
+            tx.select({ count: sql<number>`count(*)` }).from(evaluations).where(inArray(evaluations.corpsMemberId, memberIds)),
+            tx.select({ count: sql<number>`count(*)` }).from(comments).where(inArray(comments.corpsMemberId, memberIds)),
+            tx.select({ count: sql<number>`count(*)` }).from(commandantComments).where(inArray(commandantComments.corpsMemberId, memberIds)),
+            tx.select({ count: sql<number>`count(*)` }).from(higherInstitutions).where(inArray(higherInstitutions.corpsMemberId, memberIds)),
+          ]);
+
+          remaining.evaluations = Number(remainingEvaluations[0]?.count ?? 0);
+          remaining.comments = Number(remainingComments[0]?.count ?? 0);
+          remaining.commandantComments = Number(remainingCommandantComments[0]?.count ?? 0);
+          remaining.higherInstitutions = Number(remainingInstitutions[0]?.count ?? 0);
+        }
+
+        if (Object.values(remaining).some((count) => count > 0)) {
+          throw new Error("Batch deletion did not remove all database records");
+        }
+
+        return { success: true, remaining };
+      });
     }),
 });

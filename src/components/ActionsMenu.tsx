@@ -31,7 +31,7 @@ export default function ActionsMenu({
   const navigate = useNavigate();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
-  const isCampCommandant = userRole === "camp_commandant";
+  const canDeleteMember = userRole === "camp_commandant" || userRole === "super_admin";
 
   const handleViewProfile = () => {
     setIsOpen(false);
@@ -78,7 +78,7 @@ export default function ActionsMenu({
             Print Profile
           </DropdownMenuItem>
 
-          {isCampCommandant && (
+          {canDeleteMember && (
             <>
               <DropdownMenuSeparator />
               <DropdownMenuItem

@@ -384,42 +384,67 @@ export const corpsMembersRouter = createRouter({
       return { exists: !!existing };
     }),
 
-  // Delete corps member (camp commandant only)
+  // Delete corps member permanently, including all dependent records.
   delete: adminOrCommandantQuery
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       const db = getDb();
 
-      // Verify active batch exists and corps member belongs to it
-      const activeBatch = await db
-        .select()
-        .from(batches)
-        .where(eq(batches.isActive, 1))
-        .then((rows) => rows[0]);
+      return db.transaction(async (tx) => {
+        // Verify active batch exists and corps member belongs to it
+        const activeBatch = await tx
+          .select()
+          .from(batches)
+          .where(eq(batches.isActive, 1))
+          .then((rows) => rows[0]);
 
-      if (!activeBatch) {
-        throw new Error("No active batch");
-      }
+        if (!activeBatch) {
+          throw new Error("No active batch");
+        }
 
-      const member = await db
-        .select()
-        .from(corpsMembers)
-        .where(eq(corpsMembers.id, input.id))
-        .then((rows) => rows[0]);
+        const member = await tx
+          .select()
+          .from(corpsMembers)
+          .where(eq(corpsMembers.id, input.id))
+          .then((rows) => rows[0]);
 
-      if (!member || member.batchId !== activeBatch.id) {
-        throw new Error("Corps member not found in active batch");
-      }
+        if (!member || member.batchId !== activeBatch.id) {
+          throw new Error("Corps member not found in active batch");
+        }
 
-      // Delete all related records first
-      await db.delete(evaluations).where(eq(evaluations.corpsMemberId, input.id));
-      await db.delete(comments).where(eq(comments.corpsMemberId, input.id));
-      await db.delete(commandantComments).where(eq(commandantComments.corpsMemberId, input.id));
-      await db.delete(higherInstitutions).where(eq(higherInstitutions.corpsMemberId, input.id));
+        await tx.delete(evaluations).where(eq(evaluations.corpsMemberId, input.id));
+        await tx.delete(comments).where(eq(comments.corpsMemberId, input.id));
+        await tx.delete(commandantComments).where(eq(commandantComments.corpsMemberId, input.id));
+        await tx.delete(higherInstitutions).where(eq(higherInstitutions.corpsMemberId, input.id));
+        await tx.delete(corpsMembers).where(eq(corpsMembers.id, input.id));
 
-      // Delete the member
-      await db.delete(corpsMembers).where(eq(corpsMembers.id, input.id));
+        const [
+          remainingMember,
+          remainingEvaluations,
+          remainingComments,
+          remainingCommandantComments,
+          remainingInstitutions,
+        ] = await Promise.all([
+          tx.select({ count: sql<number>`count(*)` }).from(corpsMembers).where(eq(corpsMembers.id, input.id)),
+          tx.select({ count: sql<number>`count(*)` }).from(evaluations).where(eq(evaluations.corpsMemberId, input.id)),
+          tx.select({ count: sql<number>`count(*)` }).from(comments).where(eq(comments.corpsMemberId, input.id)),
+          tx.select({ count: sql<number>`count(*)` }).from(commandantComments).where(eq(commandantComments.corpsMemberId, input.id)),
+          tx.select({ count: sql<number>`count(*)` }).from(higherInstitutions).where(eq(higherInstitutions.corpsMemberId, input.id)),
+        ]);
 
-      return { success: true };
+        const remaining = {
+          corpsMembers: Number(remainingMember[0]?.count ?? 0),
+          evaluations: Number(remainingEvaluations[0]?.count ?? 0),
+          comments: Number(remainingComments[0]?.count ?? 0),
+          commandantComments: Number(remainingCommandantComments[0]?.count ?? 0),
+          higherInstitutions: Number(remainingInstitutions[0]?.count ?? 0),
+        };
+
+        if (Object.values(remaining).some((count) => count > 0)) {
+          throw new Error("Corps member deletion did not remove all database records");
+        }
+
+        return { success: true, remaining };
+      });
     }),
 });

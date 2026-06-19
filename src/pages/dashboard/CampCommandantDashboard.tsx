@@ -85,18 +85,23 @@ function MembersTab() {
     { enabled: !!selectedMemberId }
   );
 
+  const utils = trpc.useUtils();
   const addComment = trpc.corpsMembers.addCommandantComment.useMutation({
     onSuccess: () => { refetch(); setShowCommentForm(false); setCommentForm({ corpsMemberId: 0, comment: "" }); }
   });
-  const deleteMember = trpc.corpsMembers.delete.useMutation({ onSuccess: () => { refetch(); setSelectedMemberId(null); } });
+  const deleteMember = trpc.corpsMembers.delete.useMutation({
+    onSuccess: async () => {
+      // Invalidate cache so the list immediately reflects the deletion
+      await Promise.all([
+        utils.corpsMembers.list.invalidate(),
+        utils.stats.dashboard.invalidate(),
+      ]);
+      setSelectedMemberId(null);
+    }
+  });
 
   const handleDeleteMember = async (memberId: number) => {
-    return new Promise<void>((resolve, reject) => {
-      deleteMember.mutate({ id: memberId }, {
-        onSuccess: () => resolve(),
-        onError: (error) => reject(error),
-      });
-    });
+    await deleteMember.mutateAsync({ id: memberId });
   };
 
   if (selectedMemberId && memberDetail) {

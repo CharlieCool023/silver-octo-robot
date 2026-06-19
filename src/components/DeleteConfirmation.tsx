@@ -27,14 +27,12 @@ export default function DeleteConfirmation({
   isDeleting = false,
 }: DeleteConfirmationProps) {
   const [stage, setStage] = useState<1 | 2>(1);
+  const [confirmText, setConfirmText] = useState("");
 
   const handleClose = () => {
     setStage(1);
+    setConfirmText("");
     onOpenChange(false);
-  };
-
-  const handleFirstConfirm = () => {
-    setStage(2);
   };
 
   const handleFinalConfirm = async () => {
@@ -43,7 +41,7 @@ export default function DeleteConfirmation({
   };
 
   return (
-    <AlertDialog open={isOpen} onOpenChange={onOpenChange}>
+    <AlertDialog open={isOpen} onOpenChange={(open) => { if (!open) handleClose(); }}>
       <AlertDialogContent className="max-w-md">
         {stage === 1 ? (
           <>
@@ -53,12 +51,14 @@ export default function DeleteConfirmation({
                 <AlertDialogTitle>Delete Member?</AlertDialogTitle>
               </div>
               <AlertDialogDescription className="mt-2">
-                You are about to delete <span className="font-semibold text-gray-900">{memberName}</span>'s record. This includes all evaluation data and comments.
+                You are about to permanently delete{" "}
+                <span className="font-semibold text-gray-900">{memberName}</span>'s
+                record including all evaluations and comments.
               </AlertDialogDescription>
             </AlertDialogHeader>
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3 my-4">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3 my-2">
               <p className="text-sm text-red-800">
-                <span className="font-semibold">Warning:</span> This action will permanently remove all associated data and cannot be undone.
+                <span className="font-semibold">Warning:</span> This cannot be undone.
               </p>
             </div>
             <AlertDialogFooter>
@@ -66,7 +66,7 @@ export default function DeleteConfirmation({
                 Cancel
               </AlertDialogCancel>
               <AlertDialogAction
-                onClick={handleFirstConfirm}
+                onClick={() => setStage(2)}
                 disabled={isDeleting}
                 className="bg-red-600 hover:bg-red-700 text-white"
               >
@@ -79,28 +79,29 @@ export default function DeleteConfirmation({
             <AlertDialogHeader>
               <div className="flex items-center gap-3">
                 <AlertTriangle className="w-6 h-6 text-red-600 flex-shrink-0" />
-                <AlertDialogTitle>Confirm Permanent Deletion</AlertDialogTitle>
+                <AlertDialogTitle>Final Confirmation</AlertDialogTitle>
               </div>
               <AlertDialogDescription className="mt-2">
-                This action cannot be undone. Once you delete {memberName}'s record, it will be permanently lost.
+                Type <span className="font-bold text-gray-900">DELETE</span> to confirm
+                permanent deletion of {memberName}'s record.
               </AlertDialogDescription>
             </AlertDialogHeader>
-            <div className="bg-red-100 border border-red-400 rounded-lg p-4 my-4">
-              <p className="text-sm font-semibold text-red-900">
-                Are you absolutely certain? Type "delete" if you want to proceed.
-              </p>
-            </div>
-            <AlertDialogFooter>
-              <AlertDialogCancel 
-                onClick={() => setStage(1)} 
-                disabled={isDeleting}
-              >
+            <input
+              type="text"
+              value={confirmText}
+              onChange={(e) => setConfirmText(e.target.value)}
+              placeholder='Type DELETE here'
+              className="w-full mt-2 px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-red-500 text-sm"
+              autoFocus
+            />
+            <AlertDialogFooter className="mt-2">
+              <AlertDialogCancel onClick={() => { setStage(1); setConfirmText(""); }} disabled={isDeleting}>
                 Back
               </AlertDialogCancel>
               <AlertDialogAction
                 onClick={handleFinalConfirm}
-                disabled={isDeleting}
-                className="bg-red-600 hover:bg-red-700 text-white"
+                disabled={isDeleting || confirmText !== "DELETE"}
+                className="bg-red-600 hover:bg-red-700 text-white disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {isDeleting ? "Deleting..." : "Delete Permanently"}
               </AlertDialogAction>
