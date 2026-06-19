@@ -2,7 +2,6 @@ import { useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -65,13 +64,14 @@ export default function DeleteConfirmation({
               <AlertDialogCancel onClick={handleClose} disabled={isDeleting}>
                 Cancel
               </AlertDialogCancel>
-              <AlertDialogAction
+              <button
+                type="button"
                 onClick={() => setStage(2)}
                 disabled={isDeleting}
-                className="bg-red-600 hover:bg-red-700 text-white"
+                className="inline-flex h-9 items-center justify-center rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-xs transition-colors hover:bg-red-700 disabled:pointer-events-none disabled:opacity-50"
               >
                 Continue
-              </AlertDialogAction>
+              </button>
             </AlertDialogFooter>
           </>
         ) : (
@@ -95,16 +95,22 @@ export default function DeleteConfirmation({
               autoFocus
             />
             <AlertDialogFooter className="mt-2">
-              <AlertDialogCancel onClick={() => { setStage(1); setConfirmText(""); }} disabled={isDeleting}>
+              <button
+                type="button"
+                onClick={() => { setStage(1); setConfirmText(""); }}
+                disabled={isDeleting}
+                className="inline-flex h-9 items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium shadow-xs transition-colors hover:bg-accent hover:text-accent-foreground disabled:pointer-events-none disabled:opacity-50"
+              >
                 Back
-              </AlertDialogCancel>
-              <AlertDialogAction
+              </button>
+              <button
+                type="button"
                 onClick={handleFinalConfirm}
                 disabled={isDeleting || confirmText !== "DELETE"}
-                className="bg-red-600 hover:bg-red-700 text-white disabled:opacity-40 disabled:cursor-not-allowed"
+                className="inline-flex h-9 items-center justify-center rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-xs transition-colors hover:bg-red-700 disabled:pointer-events-none disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {isDeleting ? "Deleting..." : "Delete Permanently"}
-              </AlertDialogAction>
+              </button>
             </AlertDialogFooter>
           </>
         )}
