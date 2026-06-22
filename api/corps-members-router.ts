@@ -214,7 +214,7 @@ export const corpsMembersRouter = createRouter({
         callUpNumber: z
           .string()
           .regex(
-            /^NYSC\/[A-Z]{2,4}\/\d{4}\/[0-9]{5}$/,
+            /^NYSC\/[A-Z]{2,4}\/\d{4}\/[0-9]{5,6}$/,
             "Invalid call-up number format"
           ),
         phoneNumber: z

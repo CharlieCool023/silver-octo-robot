@@ -131,8 +131,8 @@ export default function RegisterPage() {
     if (!form.stateCode.match(/^(OD|LA)\/\d{2}[A-C]\/[0-9]{4}$/i)) {
       newErrors.stateCode = "Format: OD/YYB/XXXX or LA/YYC/XXXX (e.g., OD/25C/0001)";
     }
-    if (!form.callUpNumber.match(/^NYSC\/[A-Z]{2,4}\/\d{4}\/[0-9]{5}$/i)) {
-      newErrors.callUpNumber = "Format: NYSC/XXX/YYYY/XXXXX (e.g., NYSC/OND/2025/00001)";
+    if (!form.callUpNumber.match(/^NYSC\/[A-Z]{2,4}\/\d{4}\/[0-9]{5,6}$/i)) {
+      newErrors.callUpNumber = "Format: NYSC/XXX/YYYY/XXXXX or XXXXXX (e.g., NYSC/OND/2025/00001)";
     }
     if (!form.phoneNumber.match(/^234[0-9]{10}$/)) {
       newErrors.phoneNumber = "Must start with 234 and be 13 digits total";
