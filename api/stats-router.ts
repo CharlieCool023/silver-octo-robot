@@ -3,6 +3,20 @@ import { getDb } from "./queries/connection";
 import { corpsMembers, evaluations, comments, staffUsers, batches } from "@db/schema";
 import { eq, and, sql } from "drizzle-orm";
 
+type DashboardStats = {
+  activeBatch: { id: number; name: string; state: string } | null;
+  totalUsers?: number;
+  totalCommandants?: number;
+  totalBatches?: number;
+  totalCorpsMembers?: number;
+  evaluatedCount?: number;
+  completedEvaluationCount?: number;
+  commentedCount?: number;
+  totalMembers?: number;
+  processedCount?: number;
+  pendingCount?: number;
+};
+
 export const statsRouter = createRouter({
   dashboard: staffQuery.query(async ({ ctx }) => {
     const db = getDb();
@@ -14,7 +28,7 @@ export const statsRouter = createRouter({
       .where(eq(batches.isActive, 1))
       .then((rows) => rows[0] || null);
 
-    const stats: Record<string, any> = {
+    const stats: DashboardStats = {
       activeBatch: activeBatch
         ? { id: activeBatch.id, name: activeBatch.name, state: activeBatch.state }
         : null,
@@ -46,8 +60,17 @@ export const statsRouter = createRouter({
       stats.totalBatches = totalBatches;
 
       if (activeBatch) {
-        // Single query: count members that have BOTH pi and mow evaluations
+        // Count members with any instructor evaluation, plus those completed by both instructor roles.
         const evaluatedCount = await db
+          .select({ count: sql<number>`count(distinct cm.id)` })
+          .from(sql`${corpsMembers} cm`)
+          .where(sql`
+            cm.batch_id = ${activeBatch.id}
+            AND EXISTS (SELECT 1 FROM ${evaluations} e WHERE e.corps_member_id = cm.id)
+          `)
+          .then((r) => r[0].count);
+
+        const completedEvaluationCount = await db
           .select({ count: sql<number>`count(distinct cm.id)` })
           .from(sql`${corpsMembers} cm`)
           .where(sql`
@@ -68,6 +91,7 @@ export const statsRouter = createRouter({
           .then((r) => r[0].count);
 
         stats.evaluatedCount = evaluatedCount;
+        stats.completedEvaluationCount = completedEvaluationCount;
         stats.commentedCount = commentedCount;
       }
     }

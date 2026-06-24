@@ -109,7 +109,7 @@ export const usersRouter = createRouter({
       z.object({
         fullName: z.string().min(1),
         username: z.string().min(3),
-        password: z.string().min(6),
+        password: z.string().min(6, "Password must be at least 6 characters"),
         role: z.enum(STAFF_ROLES).exclude(["super_admin"]),
         assignedPlatoon: z.number().min(1).max(10).optional(),
         assignedBatchId: z.number().optional(),

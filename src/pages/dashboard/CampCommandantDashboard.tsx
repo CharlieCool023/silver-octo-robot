@@ -74,7 +74,8 @@ function DashboardOverview({ onNavigate }: { onNavigate: (tab: Tab) => void }) {
 
   const cards = [
     { label: "Corps Members", value: stats?.totalCorpsMembers || 0, icon: <Users className="w-6 h-6" />, color: "bg-green-500", tab: "members" as Tab },
-    { label: "Evaluated", value: stats?.evaluatedCount || 0, icon: <CheckCircle className="w-6 h-6" />, color: "bg-blue-500", tab: "members" as Tab },
+    { label: "Started Evaluation", value: stats?.evaluatedCount || 0, icon: <CheckCircle className="w-6 h-6" />, color: "bg-blue-500", tab: "members" as Tab },
+    { label: "Fully Evaluated", value: stats?.completedEvaluationCount || 0, icon: <CheckCircle className="w-6 h-6" />, color: "bg-cyan-600", tab: "members" as Tab },
     { label: "Comments", value: stats?.commentedCount || 0, icon: <Users className="w-6 h-6" />, color: "bg-purple-500", tab: "members" as Tab },
     { label: "Manage Staff", value: "View", icon: <UserCog className="w-6 h-6" />, color: "bg-amber-500", tab: "staff" as Tab },
   ];
@@ -381,7 +382,17 @@ function StaffTab() {
   const [roleFilter, setRoleFilter] = useState<CampStaffRoleFilter>("");
   const [showForm, setShowForm] = useState(false);
   const { data: allStaff, refetch } = trpc.users.list.useQuery({ search: search || undefined, role: roleFilter || undefined });
-  const createUser = trpc.users.create.useMutation({ onSuccess: () => { refetch(); setShowForm(false); } });
+  const [staffError, setStaffError] = useState("");
+  const createUser = trpc.users.create.useMutation({
+    onSuccess: () => {
+      setStaffError("");
+      refetch();
+      setShowForm(false);
+    },
+    onError: (err) => {
+      setStaffError(err.message || "Staff account could not be created. Please check the details and try again.");
+    },
+  });
   const toggleUser = trpc.users.update.useMutation({ onSuccess: () => refetch() });
   const hardDelete = trpc.users.hardDelete.useMutation({ onSuccess: () => refetch() });
 
@@ -409,8 +420,13 @@ function StaffTab() {
       </div>
 
       {showForm && (
-        <motion.form initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="bg-white rounded-xl p-6 shadow-sm border space-y-4" onSubmit={(e) => { e.preventDefault(); createUser.mutate({ ...form, assignedPlatoon: form.assignedPlatoon }, { onSuccess: () => setForm({ fullName: "", username: "", password: "", role: "platoon_instructor", assignedPlatoon: 1, assignedBatchId: undefined }) }); }}>
+        <motion.form initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="bg-white rounded-xl p-6 shadow-sm border space-y-4" onSubmit={(e) => { e.preventDefault(); setStaffError(""); createUser.mutate({ ...form, assignedPlatoon: form.assignedPlatoon }, { onSuccess: () => setForm({ fullName: "", username: "", password: "", role: "platoon_instructor", assignedPlatoon: 1, assignedBatchId: undefined }) }); }}>
           <h3 className="font-semibold text-gray-800">Create Staff Member</h3>
+          {staffError && (
+            <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+              {staffError}
+            </div>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <input type="text" placeholder="Full Name" value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-green-500" required />
             <input type="text" placeholder="Username" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-green-500" required />
