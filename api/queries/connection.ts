@@ -6,7 +6,7 @@ import * as relations from "@db/relations";
 
 const fullSchema = { ...schema, ...relations };
 
-let instance: ReturnType<typeof drizzle<typeof fullSchema>>;
+let instance: ReturnType<typeof drizzle> | undefined;
 
 export function getDb() {
   if (!instance) {
@@ -18,7 +18,7 @@ export function getDb() {
       queueLimit: 50,          // queue requests rather than reject under load
       idleTimeout: 60000,      // release idle connections after 60s
     });
-    instance = drizzle(pool, { schema: fullSchema, mode: "default" });
+    instance = drizzle(pool, { schema: fullSchema, mode: "default" }) as unknown as ReturnType<typeof drizzle>;
   }
   return instance;
 }

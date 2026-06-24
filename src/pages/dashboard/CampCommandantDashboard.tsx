@@ -3,15 +3,54 @@ import { useSearchParams, useNavigate } from "react-router";
 import { motion } from "framer-motion";
 import {
   Users, UserCog, Printer, Download, Plus, Search, CheckCircle, XCircle,
-  ChevronLeft, ChevronRight, ArrowLeft,
+  ChevronLeft, ChevronRight, ArrowLeft, Trash2, AlertTriangle,
 } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import ActionsMenu from "@/components/ActionsMenu";
 import { trpc } from "@/providers/trpc";
 import { useScrollPosition } from "@/hooks/useScrollPosition";
 import { useAuth } from "@/hooks/useAuth";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 type Tab = "dashboard" | "members" | "staff" | "batches" | "print" | "export";
+type CampStaffRole = "platoon_instructor" | "man_o_war_instructor" | "soldier";
+type CampStaffRoleFilter = "" | CampStaffRole;
+type EvaluationSummary = {
+  leadershipInitiative: number;
+  professionalBearing: number;
+  physicalFitness: number;
+  communicationSkills: number;
+  technicalCompetence: number;
+  teamworkCooperation: number;
+  reliabilityDependability: number;
+  respectDignityRights: number;
+  overallAverage: number | string;
+};
+type TextComment = { id: number; comment: string };
+type MemberDetailRecord = {
+  id: number;
+  passportPhoto?: string | null;
+  surname: string;
+  otherNames: string;
+  stateCode: string;
+  callUpNumber: string;
+  platoon: number;
+  evaluations?: {
+    platoonInstructor?: EvaluationSummary | null;
+    manOWar?: EvaluationSummary | null;
+  };
+  comments?: TextComment[];
+  commandantComments?: TextComment[];
+};
 
 export default function CampCommandantDashboard() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -202,7 +241,7 @@ function MemberDetail({
   isSubmitting,
   onPrint,
 }: {
-  member: any;
+  member: MemberDetailRecord;
   onAddComment: (id: number) => void;
   showCommentForm: boolean;
   commentForm: { corpsMemberId: number; comment: string };
@@ -215,6 +254,8 @@ function MemberDetail({
   // plus: institutions, evaluations: { platoonInstructor, manOWar }, comments, commandantComments
   const piEval = member.evaluations?.platoonInstructor;
   const mowEval = member.evaluations?.manOWar;
+  const comments = member.comments ?? [];
+  const commandantComments = member.commandantComments ?? [];
 
   return (
     <div className="space-y-6">
@@ -288,9 +329,9 @@ function MemberDetail({
       {/* Soldier Comments */}
       <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border">
         <h3 className="font-semibold text-gray-800 mb-4">Soldier Comments</h3>
-        {member.comments?.length > 0 ? (
+        {comments.length > 0 ? (
           <div className="space-y-3">
-            {member.comments.map((c: any) => (
+            {comments.map((c) => (
               <div key={c.id} className="bg-gray-50 rounded-lg p-3 text-sm"><p className="text-gray-700">{c.comment}</p></div>
             ))}
           </div>
@@ -300,9 +341,9 @@ function MemberDetail({
       {/* Commandant Comments */}
       <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border">
         <h3 className="font-semibold text-gray-800 mb-4">Commandant Comments</h3>
-        {member.commandantComments?.length > 0 ? (
+        {commandantComments.length > 0 ? (
           <div className="space-y-3">
-            {member.commandantComments.map((c: any) => (
+            {commandantComments.map((c) => (
               <div key={c.id} className="bg-gray-50 rounded-lg p-3 text-sm"><p className="text-gray-700">{c.comment}</p></div>
             ))}
           </div>
@@ -337,15 +378,23 @@ function EvalRow({ label, value }: { label: string; value: number }) {
 
 function StaffTab() {
   const [search, setSearch] = useState("");
-  const [roleFilter, setRoleFilter] = useState("");
+  const [roleFilter, setRoleFilter] = useState<CampStaffRoleFilter>("");
   const [showForm, setShowForm] = useState(false);
   const { data: allStaff, refetch } = trpc.users.list.useQuery({ search: search || undefined, role: roleFilter || undefined });
   const createUser = trpc.users.create.useMutation({ onSuccess: () => { refetch(); setShowForm(false); } });
   const toggleUser = trpc.users.update.useMutation({ onSuccess: () => refetch() });
+  const hardDelete = trpc.users.hardDelete.useMutation({ onSuccess: () => refetch() });
 
   const [form, setForm] = useState({ fullName: "", username: "", password: "", role: "platoon_instructor" as "platoon_instructor" | "man_o_war_instructor" | "soldier", assignedPlatoon: 1, assignedBatchId: undefined as number | undefined });
+  const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string; role: string } | null>(null);
 
   const platoonStaff = allStaff?.filter((u) => u.role === "platoon_instructor" || u.role === "man_o_war_instructor" || u.role === "soldier") || [];
+  const existingAssignment = platoonStaff.find(
+    (u) =>
+      u.isActive &&
+      u.role === form.role &&
+      u.assignedPlatoon === form.assignedPlatoon
+  );
 
   return (
     <div className="space-y-6">
@@ -366,7 +415,7 @@ function StaffTab() {
             <input type="text" placeholder="Full Name" value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-green-500" required />
             <input type="text" placeholder="Username" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-green-500" required />
             <input type="password" placeholder="Password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-green-500" required />
-            <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as any })} className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-green-500">
+            <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as CampStaffRole })} className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-green-500">
               <option value="platoon_instructor">Platoon Instructor</option>
               <option value="man_o_war_instructor">Man O'War Instructor</option>
               <option value="soldier">Soldier</option>
@@ -375,6 +424,15 @@ function StaffTab() {
               {Array.from({ length: 10 }, (_, i) => (<option key={i + 1} value={i + 1}>Platoon {i + 1}</option>))}
             </select>
           </div>
+          {existingAssignment && (
+            <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+              <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-600" />
+              <p>
+                {existingAssignment.fullName} is the active {form.role.replace(/_/g, " ")} for Platoon {form.assignedPlatoon}.
+                Creating this account will deactivate that existing account.
+              </p>
+            </div>
+          )}
           <div className="flex flex-col sm:flex-row gap-3">
             <button type="submit" disabled={createUser.isPending} className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50">{createUser.isPending ? "Creating..." : "Create"}</button>
             <button type="button" onClick={() => setShowForm(false)} className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
@@ -383,7 +441,7 @@ function StaffTab() {
       )}
 
       <div className="flex flex-wrap gap-2">
-        {["", "platoon_instructor", "man_o_war_instructor", "soldier"].map((r) => (
+        {(["", "platoon_instructor", "man_o_war_instructor", "soldier"] as CampStaffRoleFilter[]).map((r) => (
           <button key={r} onClick={() => setRoleFilter(r)} className={`px-3 py-1 rounded-full text-sm ${roleFilter === r ? "bg-green-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>
             {r === "" ? "All" : r === "platoon_instructor" ? "Platoon Instructors" : r === "man_o_war_instructor" ? "Man O'War" : "Soldiers"}
           </button>
@@ -415,9 +473,18 @@ function StaffTab() {
                   <td className="px-4 py-3 text-sm text-gray-600">P{u.assignedPlatoon}</td>
                   <td className="px-4 py-3">{u.isActive ? <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">Active</span> : <span className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full">Inactive</span>}</td>
                   <td className="px-4 py-3">
-                    <button onClick={() => toggleUser.mutate({ id: u.id, isActive: u.isActive ? 0 : 1 })} className="text-sm text-blue-600 hover:text-blue-700">
-                      {u.isActive ? "Deactivate" : "Activate"}
-                    </button>
+                    <div className="flex items-center gap-3">
+                      <button onClick={() => toggleUser.mutate({ id: u.id, isActive: u.isActive ? 0 : 1 })} className="text-sm text-blue-600 hover:text-blue-700">
+                        {u.isActive ? "Deactivate" : "Activate"}
+                      </button>
+                      <button
+                        onClick={() => setDeleteTarget({ id: u.id, name: u.fullName, role: u.role })}
+                        className="text-red-500 hover:text-red-700"
+                        title="Permanently delete"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -426,6 +493,45 @@ function StaffTab() {
           </table>
         </div>
       </div>
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <div className="flex items-center gap-3 mb-1">
+              <AlertTriangle className="w-6 h-6 text-red-500 flex-shrink-0" />
+              <AlertDialogTitle>Delete Staff Account</AlertDialogTitle>
+            </div>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3 text-sm text-gray-600">
+                <p>
+                  You are about to permanently delete{" "}
+                  <span className="font-semibold text-gray-900">{deleteTarget?.name}</span>'s account
+                  ({deleteTarget?.role.replace(/_/g, " ")}).
+                </p>
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                  <p className="text-red-800 text-xs">
+                    <span className="font-semibold">This is permanent.</span> The account will be removed
+                    from the system entirely and their login will stop working immediately.
+                  </p>
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={hardDelete.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (!deleteTarget) return;
+                hardDelete.mutate({ id: deleteTarget.id }, { onSuccess: () => setDeleteTarget(null) });
+              }}
+              disabled={hardDelete.isPending}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              {hardDelete.isPending ? "Deleting..." : "Delete Permanently"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
